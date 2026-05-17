@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .section-title {
+            border-left: 5px solid #0d6efd;
+            padding-left: 10px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        /* Thiết lập chiều cao tối đa khoảng 7 dòng, quá thì mới hiện cuộn */
+        .table-scrollable {
+            max-height: 420px; 
+            overflow-y: auto;
+        }
+        /* cố định header */
+        .table-scrollable thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa; /* Trùng màu nền của table-light */
+            z-index: 1;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1); /* Tạo viền mờ phân cách khi cuộn */
+        }
+        /* làm đẹp filter */
+        .filter-input {
+            font-weight: normal;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#"></a>
+            <div class="d-flex text-white align-items-center">
+                <span class="me-3">Lễ tân: <strong>{{ session['username'] }}</strong></span>
+                <a href="/logout" class="btn btn-danger btn-sm">Đăng xuất</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-5 pb-5">
+        
+        <h4 class="section-title">1. Thông tin cá nhân nhân viên</h4>
+        <div class="card shadow-sm border-0">
+            <div class="card-body row">
+                <div class="col-md-4 border-end">
+                    <p><strong>Họ và Tên:</strong> {{ receptionist.name }}</p>
+                    <p><strong>Mã định danh (CCCD):</strong> {{ receptionist.employee_pin }}</p>
+                    <p><strong>Giới tính:</strong> {{ 'Nam' if receptionist.gender == 'M' else 'Nữ' }}</p>
+                </div>
+                <div class="col-md-4 border-end">
+                    <p><strong>Số điện thoại:</strong> {{ receptionist.phone }}</p>
+                    <p><strong>Email:</strong> {{ receptionist.email }}</p>
+                    <p><strong>Địa chỉ:</strong> {{ receptionist.address }}</p>
+                </div>
+                <div class="col-md-4 bg-light rounded py-2">
+                    <p> <span class="badge bg-success fs-6 mt-1">Nhân viên lễ tân</span></p>
+                    <p><strong>Lương cố định:</strong> <span class="text-success fw-bold">{{ "{:,.0f}".format(receptionist.salary) }} VNĐ</span></p>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="section-title">2. Quản lý bệnh nhân</h4>
+        
+        <div class="card shadow-sm border-0 mb-4 bg-white">
+            <div class="card-body">
+                <form method="GET" action="/receptionist_dashboard" class="row g-3 align-items-center">
+                    <div class="col-md-8 col-sm-10">
+                        <label class="form-label fw-bold">Nhập Mã số (ID) Bệnh nhân cần quản lý:</label>
+                        <input type="number" name="search_patient_id" class="form-control form-control-lg border-primary" 
+                               value="{{ search_id if search_id else '' }}" placeholder="Ví dụ: 1, 2, 3..." required>
+                    </div>
+                    <div class="col-md-4 col-sm-2 d-grid align-self-end">
+                        <button type="submit" class="btn btn-primary btn-lg shadow-sm">Tra cứu hồ sơ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if search_id %}
+            {% if patient %}
+                <div class="row">
+                    
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-dark text-white fw-bold">Chỉnh sửa thông tin</div>
+                            <div class="card-body">
+                                <form method="POST" action="/receptionist_update_patient">
+                                    <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+                                    <input type="hidden" name="patient_pin" value="{{ patient.patient_pin }}">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Họ và Tên bệnh nhân</label>
+                                        <input type="text" name="name" class="form-control" value="{{ patient.name }}" required>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col">
+                                            <label class="form-label fw-bold">Giới tính</label>
+                                            <select name="gender" class="form-select" required>
+                                                <option value="M" {% if patient.gender == 'M' %}selected{% endif %}>Nam</option>
+                                                <option value="F" {% if patient.gender == 'F' %}selected{% endif %}>Nữ</option>
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <label class="form-label fw-bold">Ngày sinh</label>
+                                            <input type="date" name="date_of_birth" class="form-control" value="{{ patient.date_of_birth }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col">
+                                            <label class="form-label fw-bold">Số điện thoại</label>
+                                            <input type="text" name="phone" class="form-control" value="{{ patient.phone }}" required>
+                                        </div>
+                                        <div class="col">
+                                            <label class="form-label fw-bold">Email</label>
+                                            <input type="email" name="email" class="form-control" value="{{ patient.email }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold">Địa chỉ thường trú</label>
+                                        <input type="text" name="address" class="form-control" value="{{ patient.address }}" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100 shadow-sm">Lưu thay đổi hồ sơ</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-success text-white fw-bold">Sắp xếp / Đặt thêm lịch hẹn khám</div>
+                            <div class="card-body">
+                                <form method="POST" action="/receptionist_add_appointment">
+                                    <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Ngày hẹn khám</label>
+                                        <input type="date" name="date_of_appointment" class="form-control" required>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col">
+                                            <label class="form-label fw-bold">Thời gian bắt đầu</label>
+                                            <input type="time" name="start_time" class="form-control" required>
+                                        </div>
+                                        <div class="col">
+                                            <label class="form-label fw-bold">Thời gian kết thúc</label>
+                                            <input type="time" name="end_time" class="form-control" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Người thực hiện (Bác sĩ / Phụ tá phụ trách)</label>
+                                        <select name="dentist_id" class="form-select" required>
+                                            <option value="">-- Chọn nhân sự lâm sàng --</option>
+                                            {% for staff in clinical_staff %}
+                                                <option value="{{ staff.employee_id }}">
+                                                    [{{ 'Bác sĩ' if staff.employee_type == 'd' else 'Phụ tá' }}] {{ staff.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold">Số phòng chỉ định</label>
+                                        <input type="number" name="room" class="form-control" value="1" min="1" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success w-100 shadow-sm">Xác nhận đăng ký lịch hẹn</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-2">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-secondary text-white fw-bold">Lịch sử & Danh sách các ca hẹn đã đặt</div>
+                            <div class="card-body p-0">
+                                {% if appointments %}
+                                    <div class="table-responsive table-scrollable">
+                                        <table id="appointmentTable" class="table table-hover align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th onclick="sortTable(0, 'appointmentTable')" style="cursor: pointer;">Mã lịch</th>
+                                                    <th onclick="sortTable(1, 'appointmentTable')" style="cursor: pointer;">Ngày hẹn</th>
+                                                    <th>Khung giờ</th>
+                                                    <th onclick="sortTable(3, 'appointmentTable')" style="cursor: pointer;">Người phụ trách</th>
+                                                    <th onclick="sortTable(4, 'appointmentTable')" style="cursor: pointer;">Số phòng</th>
+                                                    <th onclick="sortTable(5, 'appointmentTable')" style="cursor: pointer;">Trạng thái hiện tại</th>
+                                                    <th>Cập nhật trạng thái</th> 
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for appt in appointments %}
+                                                <tr>
+                                                    <td><strong>{{ appt.appointment_id }}</strong></td>
+                                                    <td>{{ appt.date_of_appointment }}</td>
+                                                    <td>{{ appt.start_time }} - {{ appt.end_time }}</td>
+                                                    <td>{{ appt.dentist_name }}</td>
+                                                    <td>Phòng {{ appt.room }}</td>
+                                                    <td>
+                                                        <span class="badge 
+                                                            {% if appt.appointment_status == 'Đã đặt lịch' %}bg-warning text-dark
+                                                            {% elif appt.appointment_status == 'Đã khám' %}bg-success
+                                                            {% elif appt.appointment_status == 'Đã huỷ' %}bg-danger
+                                                            {% else %}bg-secondary{% endif %}">
+                                                            {{ appt.appointment_status }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <form method="POST" action="/receptionist_update_status" class="d-flex">
+                                                            <input type="hidden" name="appointment_id" value="{{ appt.appointment_id }}">
+                                                            <input type="hidden" name="patient_id" value="{{ patient.patient_id }}">
+                                                            
+                                                            <select name="new_status" class="form-select form-select-sm me-2" style="width: 130px;">
+                                                                <option value="Đã đặt lịch" {% if appt.appointment_status == 'Đã đặt lịch' %}selected{% endif %}>Đã đặt lịch</option>
+                                                                <option value="Đã khám" {% if appt.appointment_status == 'Đã khám' %}selected{% endif %}>Đã khám</option>
+                                                                <option value="Vắng mặt" {% if appt.appointment_status == 'Vắng mặt' %}selected{% endif %}>Vắng mặt</option>
+                                                                <option value="Đã huỷ" {% if appt.appointment_status == 'Đã huỷ' %}selected{% endif %}>Đã hủy</option>
+                                                            </select>
+                                                            <button type="submit" class="btn btn-primary btn-sm">Lưu</button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted text-center p-4 m-0">Bệnh nhân này hiện chưa có lịch hẹn khám nào.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            {% else %}
+                <div class="alert alert-danger text-center shadow-sm">
+                    Không tìm thấy bệnh nhân nào ứng với mã số <strong>ID = {{ search_id }}</strong> trong hệ thống. Vui lòng kiểm tra lại.
+                </div>
+            {% endif %}
+        {% endif %}
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // 1. Ghi nhớ vị trí cuộn khi lưu trạng thái
+    window.addEventListener('beforeunload', () => {
+        sessionStorage.setItem('saved_scroll_position', window.scrollY);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const scrollPosition = sessionStorage.getItem('saved_scroll_position');
+        if (scrollPosition) {
+            window.scrollTo(0, parseInt(scrollPosition));
+            sessionStorage.removeItem('saved_scroll_position');
+        }
+    });
+    </script>
+
+    <script>
+    function sortTable(columnIndex, tableId) {
+        let table = document.getElementById(tableId);
+        let tbody = table.querySelector("tbody");
+        if (!tbody) return;
+        
+        let rows = Array.from(tbody.querySelectorAll("tr"));
+        
+        let currentDir = table.getAttribute("data-sort-dir-" + columnIndex) || "desc";
+        let nextDir = currentDir === "asc" ? "desc" : "asc";
+        
+        rows.sort((rowA, rowB) => {
+            let cellA = rowA.getElementsByTagName("td")[columnIndex].textContent.trim();
+            let cellB = rowB.getElementsByTagName("td")[columnIndex].textContent.trim();
+            
+            
+            if (cleanA !== "" && cleanB !== "" && !isNaN(cleanA) && !isNaN(cleanB)) {
+                return nextDir === "asc" ? parseFloat(cleanA) - parseFloat(cleanB) : parseFloat(cleanB) - parseFloat(cleanA);
+            }
+            
+            return nextDir === "asc" ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+        });
+        
+        table.setAttribute("data-sort-dir-" + columnIndex, nextDir);
+        rows.forEach(row => tbody.appendChild(row));
+    }
+    </script>
+</body>
+</html>

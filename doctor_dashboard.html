@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .section-title {
+            border-left: 5px solid #0d6efd;
+            padding-left: 10px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        /* Thiết lập chiều cao tối đa khoảng 7 dòng, quá thì mới hiện cuộn */
+        .table-scrollable {
+            max-height: 420px; 
+            overflow-y: auto;
+        }
+        /* cố định header */
+        .table-scrollable thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa; /* Trùng màu nền của table-light */
+            z-index: 1;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1); /* Tạo viền mờ phân cách khi cuộn */
+        }
+        /* làm đẹp filter */
+        .filter-input {
+            font-weight: normal;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#"></a>
+            <div class="d-flex text-white align-items-center">
+                <span class="me-3">Nha sĩ: <strong>{{ session['username'] }}</strong></span>
+                <a href="/logout" class="btn btn-danger btn-sm">Đăng xuất</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-5 pb-5">
+        
+        <h4 class="section-title">1. Thông tin cá nhân bác sĩ</h4>
+        <div class="card shadow-sm border-0">
+            <div class="card-body row">
+                <div class="col-md-4 border-end">
+                    <p><strong>Họ và Tên:</strong> <span class="">{{ doctor.name }}</span></p>
+                    <p><strong>Mã định danh (CCCD):</strong> {{ doctor.employee_pin }}</p>
+                    <p><strong>Giới tính:</strong> {{ 'Nam' if doctor.gender == 'M' else 'Nữ' }}</p>
+                </div>
+                <div class="col-md-4 border-end">
+                    <p><strong>Số điện thoại:</strong> {{ doctor.phone }}</p>
+                    <p><strong>Email:</strong> {{ doctor.email }}</p>
+                    <p><strong>Địa chỉ:</strong> {{ doctor.address }}</p>
+                </div>
+                <div class="col-md-4 bg-light rounded py-2">
+                    <span class="badge bg-primary fs-6 mt-1">
+                        {% if doctor.employee_type == 'd' %}
+                            Nha sĩ
+                        {% elif doctor.employee_type == 'h' %}
+                            Phụ tá nha khoa
+                        {% else %}
+                            Nhân viên y tế
+                        {% endif %}
+                    </span>
+                    <p>Lương cố định: <span class="text-success fw-bold">{{ "{:,.0f}".format(doctor.salary) }} VNĐ</span></p>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="section-title">2. Danh sách lịch hẹn khám phụ trách</h4>
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                {% if appointments %}
+                    <div class="table-responsive table-scrollable">
+                        <table id="appointmentTable" class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th onclick="sortTable(0, 'appointmentTable')" style="cursor: pointer;">ID Lịch hẹn ⇅</th>
+                                    <th onclick="sortTable(1, 'appointmentTable')" style="cursor: pointer;">ID Bệnh nhân ⇅</th>
+                                    <th onclick="sortTable(2, 'appointmentTable')" style="cursor: pointer;">Tên Bệnh nhân ⇅</th>
+                                    <th onclick="sortTable(3, 'appointmentTable')" style="cursor: pointer;">Ngày khám ⇅</th>
+                                    <th>Thời gian ca</th>
+                                    <th onclick="sortTable(5, 'appointmentTable')" style="cursor: pointer;">Phòng số ⇅</th>
+                                    <th onclick="sortTable(6, 'appointmentTable')" style="cursor: pointer;">Trạng thái hiện tại ⇅</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in appointments %}
+                                <tr>
+                                    <td><strong>{{ appt.appointment_id }}</strong></td>
+                                    <td>{{ appt.patient_id }}</td>
+                                    <td>{{ appt.patient_name }}</td>
+                                    <td>{{ appt.date_of_appointment }}</td>
+                                    <td>{{ appt.start_time }} - {{ appt.end_time }}</td>
+                                    <td>Phòng {{ appt.room }}</td>
+                                    <td>
+                                        <span class="badge {% if appt.appointment_status == 'Đã đặt lịch' %}bg-warning text-dark{% elif appt.appointment_status == 'Đã khám' %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ appt.appointment_status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center p-3 m-0">Bạn hiện không có lịch khám nào được chỉ định.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6">
+                <h4 class="section-title">3. Thêm hồ sơ điều trị lâm sàng</h4>
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <form method="POST" action="/doctor_add_treatment">
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label fw-bold">ID Bệnh nhân</label>
+                                    <input type="number" name="patient_id" class="form-control" required placeholder="Nhập ID...">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label fw-bold">ID Lịch hẹn</label>
+                                    <input type="number" name="appointment_id" class="form-control" required placeholder="Nhập ID...">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Loại điều trị</label>
+                                <input type="text" name="treatment_type" class="form-control" required placeholder="Ví dụ: Chữa tủy răng, Trám răng thẩm mỹ...">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Triệu chứng bệnh lý</label>
+                                <textarea name="symptoms" class="form-control" rows="2" required placeholder="Mô tả bệnh lý chẩn đoán..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Thuốc sử dụng</label>
+                                <input type="text" name="medication" class="form-control" required placeholder="Ghi rõ tên các loại thuốc kê...">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label fw-bold">Răng số (Mã FDI)</label>
+                                    <input type="text" name="tooth" class="form-control" required placeholder="Ví dụ: 11, 22, Hàm trên">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Chú thích lâm sàng</label>
+                                <input type="text" name="comments" class="form-control" placeholder="Ghi chú thêm từ bác sĩ...">
+                            </div>
+                            <button type="submit" class="btn btn-info text-white w-100 shadow-sm"> Gửi dữ liệu điều trị</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <h4 class="section-title">4. Chỉ định Gói dịch vụ thương mại</h4>
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <form method="POST" action="/doctor_add_procedure">
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label fw-bold">ID Lịch hẹn</label>
+                                    <input type="number" name="appointment_id" class="form-control" required placeholder="Nhập ID...">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label fw-bold">ID Bệnh nhân</label>
+                                    <input type="number" name="patient_id" class="form-control" required placeholder="Nhập ID...">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label fw-bold">Răng số</label>
+                                    <input type="text" name="tooth" class="form-control" required placeholder="Vị trí răng làm dịch vụ">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label fw-bold">Tên gói dịch vụ</label>
+                                    <select name="procedure_code" id="procedure_code" class="form-select" required onchange="calculateCost()">
+                                        <option value="" data-fee="0">-- Chọn gói dịch vụ --</option>
+                                        {% for proc in procedures_list %}
+                                            <option value="{{ proc.procedure_code }}" data-fee="{{ proc.procedure_fee }}">{{ proc.procedure_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Chú thích hóa đơn (Description)</label>
+                                <input type="text" name="appointment_description" class="form-control" required placeholder="Mô tả nội dung xuất hóa đơn">
+                            </div>
+                            <div class="row mb-4">
+                                <div class="col">
+                                    <label class="form-label fw-bold">Số lượng</label>
+                                    <input type="number" name="amount_of_procedure" id="amount_of_procedure" class="form-control" value="1" min="1" required oninput="calculateCost()">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label fw-bold">Tổng chi phí dự kiến</label>
+                                    <input type="hidden" name="total_charge" id="total_charge" value="0">
+                                    <div class="form-control bg-light text-danger fw-bold fs-5" id="total_charge_display">0 đ</div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-danger w-100 shadow-sm">Gửi yêu cầu thanh toán</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function calculateCost() {
+            const selectElement = document.getElementById('procedure_code');
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            const unitFee = parseFloat(selectedOption.getAttribute('data-fee')) || 0;
+            const quantity = parseInt(document.getElementById('amount_of_procedure').value) || 1;
+            
+            const total = unitFee * quantity;
+            document.getElementById('total_charge').value = total;
+            document.getElementById('total_charge_display').innerText = total.toLocaleString('vi-VN') + ' đ';
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 1. Trước khi trang bị tải lại (khi bấm nút Lưu), lưu lại vị trí cuộn hiện tại (tính bằng pixel) vào bộ nhớ trình duyệt
+        window.addEventListener('beforeunload', () => {
+            sessionStorage.setItem('saved_scroll_position', window.scrollY);
+        });
+
+        // 2. Khi trang vừa tải xong dữ liệu mới, kiểm tra bộ nhớ xem có vị trí cũ không, nếu có thì tự động cuộn xuống đúng chỗ đó
+        window.addEventListener('DOMContentLoaded', () => {
+            const scrollPosition = sessionStorage.getItem('saved_scroll_position');
+            if (scrollPosition) {
+                // Cuộn đến vị trí cũ mượt mà (smooth) hoặc lập tức
+                window.scrollTo(0, parseInt(scrollPosition));
+                // Xóa vị trí đã lưu để không ảnh hưởng đến những lần tải trang thủ công khác
+                sessionStorage.removeItem('saved_scroll_position');
+            }
+        });
+    </script>
+    
+    <script>
+    function sortTable(columnIndex, tableId) {
+        let table = document.getElementById(tableId);
+        let tbody = table.querySelector("tbody");
+        if (!tbody) return;
+        
+        let rows = Array.from(tbody.querySelectorAll("tr"));
+        
+        // Kiểm tra xem cột này đang sắp xếp theo hướng nào (mặc định ban đầu là desc)
+        let currentDir = table.getAttribute("data-sort-dir-" + columnIndex) || "desc";
+        let nextDir = currentDir === "asc" ? "desc" : "asc";
+        
+        rows.sort((rowA, rowB) => {
+            let cellA = rowA.getElementsByTagName("td")[columnIndex].textContent.trim();
+            let cellB = rowB.getElementsByTagName("td")[columnIndex].textContent.trim();
+            
+            // So sánh số thuần túy trực tiếp
+            if (!isNaN(cellA) && !isNaN(cellB) && cellA !== "" && cellB !== "") {
+                return nextDir === "asc" ? parseFloat(cellA) - parseFloat(cellB) : parseFloat(cellB) - parseFloat(cellA);
+            }
+            
+            // Nếu là chuỗi ký tự hoặc ngày tháng (YYYY-MM-DD) thì xếp theo bảng chữ cái/thời gian
+            return nextDir === "asc" ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+        });
+        
+        // Ghi nhớ lại trạng thái hướng sắp xếp mới của cột này
+        table.setAttribute("data-sort-dir-" + columnIndex, nextDir);
+        
+        // Đổ lại các dòng đã sắp xếp vào bảng
+        rows.forEach(row => tbody.appendChild(row));
+    }
+    </script>
+</body>
+</html>
