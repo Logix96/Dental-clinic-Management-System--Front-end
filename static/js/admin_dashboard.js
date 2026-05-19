@@ -349,3 +349,64 @@ function deleteService(id) {
     fetch("/admin_delete_procedure/" + id, { method: "DELETE" })
     .then(r => r.json()).then(res => { if(res.status === 'success') { window.location.reload(); } else alert("Lỗi: " + res.message); });
 }
+
+// ---- THÊM KHÁCH HÀNG MỚI ----
+function submitAddClient() {
+    const data = {
+        name: document.getElementById('addClientName').value, 
+        gender: document.getElementById('addClientGender').value,
+        dob: document.getElementById('addClientDob').value, 
+        phone: document.getElementById('addClientPhone').value,
+        email: document.getElementById('addClientEmail').value, 
+        address: document.getElementById('addClientAddress').value,
+        pin: document.getElementById('addClientPin').value, 
+        username: document.getElementById('addClientUser').value,
+        password: document.getElementById('addClientPass').value
+    };
+    
+    if(!data.name || !data.dob || !data.phone || !data.username || !data.password) { 
+        alert("Vui lòng điền đủ các trường bắt buộc có dấu *"); return; 
+    }
+    
+    fetch("/admin_add_client", {
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(data)
+    }).then(r => r.json()).then(res => {
+        if(res.status === 'success') { 
+            alert("Thêm khách hàng thành công!"); 
+            window.location.reload(); 
+        } else alert("Lỗi: " + res.message);
+    });
+}
+
+function submitAddEmployee() {
+    const data = {
+        name: document.getElementById('addEmpName').value, 
+        gender: document.getElementById('addEmpGender').value,
+        dob: document.getElementById('addEmpDob').value, 
+        phone: document.getElementById('addEmpPhone').value,
+        email: document.getElementById('addEmpEmail').value, 
+        address: document.getElementById('addEmpAddress').value,
+        pin: document.getElementById('addEmpPin').value, 
+        type: document.getElementById('addEmpType').value,
+        salary: document.getElementById('addEmpSalary').value, 
+        username: document.getElementById('addEmpUser').value,
+        password: document.getElementById('addEmpPass').value
+    };
+    
+    if(!data.name || !data.dob || !data.phone || !data.username || !data.password || !data.salary) { 
+        alert("Vui lòng điền đủ các trường bắt buộc có dấu *"); return; 
+    }
+    
+    fetch("/admin_add_employee", {
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(data)
+    }).then(r => r.json()).then(res => {
+        if(res.status === 'success') { 
+            alert("Thêm nhân viên thành công!"); 
+            window.location.reload(); 
+        } else alert("Lỗi: " + res.message);
+    });
+}
