@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bảng Điều Khiển Khách Hàng - Nha Khoa Việt</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/client_dashboard.css') }}"
+    />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-title">VD</div>
+        <div class="brand-subtitle">Nha Khoa Việt</div>
+      </div>
+      <div class="user-welcome">
+        Xin chào, <br /><strong>{{ session['username'] }}</strong>
+      </div>
+
+      <ul class="sidebar-nav">
+        <li>
+          <a class="active" data-target="view-overview"
+            ><i class="fas fa-chart-pie"></i> Tổng Quan</a
+          >
+        </li>
+        <li>
+          <a data-target="view-appointments"
+            ><i class="fas fa-calendar-alt"></i> Lịch Hẹn Khám</a
+          >
+        </li>
+        <li>
+          <a data-target="view-treatments"
+            ><i class="fas fa-file-medical"></i> Liệu Trình Điều Trị</a
+          >
+        </li>
+        <li>
+          <a data-target="view-billing"
+            ><i class="fas fa-credit-card"></i> Thanh Toán</a
+          >
+        </li>
+        <li>
+          <a data-target="view-profile"
+            ><i class="fas fa-user-circle"></i> Hồ Sơ Cá Nhân</a
+          >
+        </li>
+      </ul>
+
+      <div class="logout-section">
+        <a
+          href="/logout"
+          class="btn btn-danger w-100"
+          style="border-radius: 8px; font-weight: 600"
+        >
+          <i class="fas fa-sign-out-alt me-2"></i> Đăng Xuất
+        </a>
+      </div>
+    </aside>
+
+    <main class="main-wrapper">
+      <div id="view-overview" class="dashboard-view active-view">
+        <div class="page-header">
+          <h1 class="page-title">Tổng quan bảng điều khiển</h1>
+          <div class="current-date">
+            <i class="far fa-calendar-check"></i>
+            <span class="date-render"></span>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-md-6">
+            <div class="summary-card">
+              <div class="info">
+                <p>Lịch hẹn sắp tới</p>
+                <h3 id="statUpcomingCount">0</h3>
+              </div>
+              <div class="icon icon-blue">
+                <i class="fas fa-calendar-plus"></i>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="summary-card">
+              <div class="info">
+                <p>Phí dịch vụ chưa nộp</p>
+                <h3 id="statUnpaidFee" class="text-danger">0 đ</h3>
+              </div>
+              <div class="icon icon-orange"><i class="fas fa-wallet"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Danh sách lịch hẹn</h4></div>
+          {% if appointments %}
+          <div class="table-responsive">
+            <table id="overviewApptTable" class="table align-middle">
+              <thead>
+                <tr>
+                  <th onclick="sortTable(0, 'overviewApptTable')">
+                    Ngày khám ⇅
+                  </th>
+                  <th>Thời gian</th>
+                  <th onclick="sortTable(2, 'overviewApptTable')">Nha sĩ ⇅</th>
+                  <th>Lý do</th>
+                  <th onclick="sortTable(4, 'overviewApptTable')">
+                    Trạng thái ⇅
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in appointments %}
+                <tr>
+                  <td class="fw-bold">{{ appt.date_of_appointment }}</td>
+                  <td>{{ appt.start_time }}</td>
+                  <td>BS. {{ appt.dentist_name }}</td>
+                  <td>{{ appt.reason or '—' }}</td>
+                  <td>
+                    <span
+                      class="badge {% if appt.appointment_status == 'Đã đặt lịch' %}bg-warning text-dark {% elif appt.appointment_status == 'Đã khám' %}bg-success {% elif appt.appointment_status == 'Đã huỷ' %}bg-danger {% else %}bg-secondary{% endif %}"
+                    >
+                      {{ appt.appointment_status }}
+                    </span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <div class="pagination-wrapper" id="paginationOverview"></div>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center p-3 m-0">
+            Bạn chưa có lịch hẹn nào.
+          </p>
+          {% endif %}
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Liệu trình chưa thanh toán</h4></div>
+          <div class="table-responsive table-scrollable">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Tên liệu trình</th>
+                  <th>Lịch hẹn số</th>
+                  <th>Tổng tiền</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% set has_unpaid = namespace(value=false) %}
+                {% for inv in invoices %}
+                  {% if inv.payment_status != 'Đã thanh toán' %}
+                    {% set has_unpaid.value = true %}
+                    <tr>
+                      <td><strong>{{ inv.treatment_name }}</strong></td>
+                      <td>#{{ inv.appointment_id }}</td>
+                      <td class="text-danger fw-bold unpaid-cell" data-amount="{{ inv.final_charge }}">
+                        {{ "{:,.0f}".format(inv.final_charge) }} đ
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+                {% if not has_unpaid.value %}
+                <tr>
+                  <td colspan="3" class="text-muted text-center p-3">
+                    Không có liệu trình nào cần thanh toán.
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-appointments" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Lịch hẹn khám</h1>
+          <div class="current-date">
+            <i class="far fa-calendar-check"></i>
+            <span class="date-render"></span>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Danh sách lịch hẹn sắp tới</h4></div>
+          <div class="table-responsive">
+            <table id="upcomingAppointmentsTable" class="table align-middle">
+              <thead>
+                <tr>
+                  <th onclick="sortTable(0, 'upcomingAppointmentsTable')">
+                    Ngày khám ⇅
+                  </th>
+                  <th>Thời gian</th>
+                  <th onclick="sortTable(2, 'upcomingAppointmentsTable')">
+                    Nha sĩ ⇅
+                  </th>
+                  <th>Lý do</th>
+                  <th onclick="sortTable(4, 'upcomingAppointmentsTable')">
+                    Trạng thái ⇅
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in appointments if appt.appointment_status == 'Đã đặt lịch' and appt.date_of_appointment >= today %}
+                <tr>
+                  <td class="fw-bold">{{ appt.date_of_appointment }}</td>
+                  <td>{{ appt.start_time }}</td>
+                  <td>BS. {{ appt.dentist_name }}</td>
+                  <td>{{ appt.reason or '—' }}</td>
+                  <td>
+                    <span class="badge bg-warning text-dark"
+                      >{{ appt.appointment_status }}</span
+                    >
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="5" class="text-muted text-center p-3">
+                    Không có lịch hẹn sắp tới.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <div class="pagination-wrapper" id="paginationUpcoming"></div>
+            </table>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Danh sách lịch hẹn đã qua</h4></div>
+
+          <div class="filter-bar" id="pastApptFilterBar">
+            <span class="filter-label"><i class="fas fa-filter me-1"></i>Lọc theo:</span>
+
+            <select class="filter-select" id="apptStatusFilter">
+              <option value="">Tất cả trạng thái</option>
+              <option value="Đã khám">Đã khám</option>
+              <option value="Đã huỷ">Đã huỷ</option>
+            </select>
+
+            <select class="filter-select" id="filterYear">
+              <option value="">Tất cả năm</option>
+              <option value="2024">2024</option>
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+            </select>
+
+            <select class="filter-select" id="filterMonth">
+              <option value="">Tất cả tháng</option>
+              <option value="01">Tháng 1</option>
+              <option value="02">Tháng 2</option>
+              <option value="03">Tháng 3</option>
+              <option value="04">Tháng 4</option>
+              <option value="05">Tháng 5</option>
+              <option value="06">Tháng 6</option>
+              <option value="07">Tháng 7</option>
+              <option value="08">Tháng 8</option>
+              <option value="09">Tháng 9</option>
+              <option value="10">Tháng 10</option>
+              <option value="11">Tháng 11</option>
+              <option value="12">Tháng 12</option>
+            </select>
+
+            <select class="filter-select" id="filterDay">
+              <option value="">Tất cả ngày</option>
+            </select>
+
+            <button class="btn-reset-filter" id="btnResetApptFilter">
+              <i class="fas fa-rotate-left me-1"></i>Đặt lại
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table id="apptTable" class="table align-middle">
+              <thead>
+                <tr>
+                  <th onclick="sortTable(0, 'apptTable')">Ngày khám ⇅</th>
+                  <th>Thời gian</th>
+                  <th onclick="sortTable(2, 'apptTable')">Nha sĩ ⇅</th>
+                  <th>Lý do</th>
+                  <th onclick="sortTable(4, 'apptTable')">Trạng thái ⇅</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in appointments if appt.appointment_status in ['Đã khám', 'Đã huỷ'] %}
+                <tr data-status="{{ appt.appointment_status }}">
+                  <td class="fw-bold">{{ appt.date_of_appointment }}</td>
+                  <td>{{ appt.start_time }}</td>
+                  <td>BS. {{ appt.dentist_name }}</td>
+                  <td>{{ appt.reason or '—' }}</td>
+                  <td>
+                    <span class="badge {% if appt.appointment_status == 'Đã khám' %}bg-success{% elif appt.appointment_status == 'Đã huỷ' %}bg-danger{% else %}bg-secondary{% endif %}">
+                      {{ appt.appointment_status }}
+                    </span>
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="5" class="text-muted text-center p-3">
+                    Không có lịch hẹn đã qua.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-wrapper" id="paginationAppt"></div>
+        </div>
+      </div>
+
+      <div id="view-treatments" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Liệu trình điều trị</h1>
+          <div class="current-date">
+            <i class="far fa-calendar-check"></i>
+            <span class="date-render"></span>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Liệu trình thực hiện</h4></div>
+          {% if treatments %}
+          <div class="table-responsive">
+            <table id="currentTreatmentsTable" class="table align-middle">
+              <thead>
+                <tr>
+                  <th onclick="sortTable(0, 'currentTreatmentsTable')">
+                    Tên liệu trình ⇅
+                  </th>
+                  <th>Chú thích</th>
+                  <th onclick="sortTable(2, 'currentTreatmentsTable')">
+                    Nha sĩ thực hiện ⇅
+                  </th>
+                  <th onclick="sortTable(3, 'currentTreatmentsTable')">
+                    Mã lịch hẹn ⇅
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for treat in treatments %}
+                <tr>
+                  <td class="fw-bold text-primary">
+                    {{ treat.treatment_type }}
+                  </td>
+                  <td>{{ treat.comments or '—' }}</td>
+                  <td>BS. {{ treat.dentist_name }}</td>
+                  <td>Mã LH: #{{ treat.appointment_id }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <div class="pagination-wrapper" id="paginationTreatments"></div>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center p-4 m-0">
+            Chưa có liệu trình thực hiện.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div id="view-billing" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Thanh toán</h1>
+          <div class="current-date">
+            <i class="far fa-calendar-check"></i>
+            <span class="date-render"></span>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Liệu trình chưa thanh toán</h4></div>
+          <div class="table-responsive">
+            <table id="unpaidTable" class="table align-middle">
+              <thead>
+                <tr>
+                  <th onclick="sortTable(0, 'unpaidTable')">Tên liệu trình ⇅</th>
+                  <th onclick="sortTable(1, 'unpaidTable')">Lịch hẹn số ⇅</th>
+                  <th onclick="sortTable(2, 'unpaidTable')">Tổng tiền ⇅</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% set has_unpaid2 = namespace(value=false) %}
+                {% for inv in invoices %}
+                  {% if inv.payment_status != 'Đã thanh toán' %}
+                    {% set has_unpaid2.value = true %}
+                    <tr
+                      class="clickable-row"
+                      data-invoice-id="{{ inv.invoice_id }}"
+                      data-treatment="{{ inv.treatment_name }}"
+                      data-appt="{{ inv.appointment_id }}"
+                      data-total="{{ inv.total_charge }}"
+                      data-discount="{{ inv.discount }}"
+                      data-final="{{ inv.final_charge }}"
+                      data-method="{{ inv.payment_method or 'Chưa xác định' }}"
+                      data-status="{{ inv.payment_status }}"
+                      data-date="{{ inv.invoice_date or '—' }}"
+                    >
+                      <td><strong>{{ inv.treatment_name }}</strong></td>
+                      <td>#{{ inv.appointment_id }}</td>
+                      <td class="text-danger fw-bold unpaid-cell" data-amount="{{ inv.final_charge }}">
+                        {{ "{:,.0f}".format(inv.final_charge) }} đ
+                      </td>
+                      <td>
+                        <span class="badge {% if inv.payment_status == 'Chưa thanh toán' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                          {{ inv.payment_status }}
+                        </span>
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+                {% if not has_unpaid2.value %}
+                <tr>
+                  <td colspan="4" class="text-muted text-center p-3">
+                    Không có liệu trình nào cần thanh toán.
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-wrapper" id="paginationUnpaid"></div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Liệu trình đã thanh toán</h4></div>
+          <div class="table-responsive">
+            <table id="paidTable" class="table align-middle">
+              <thead>
+                <tr>
+                  <th onclick="sortTable(0, 'paidTable')">Tên liệu trình ⇅</th>
+                  <th onclick="sortTable(1, 'paidTable')">Lịch hẹn số ⇅</th>
+                  <th onclick="sortTable(2, 'paidTable')">Tổng tiền ⇅</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in invoices if inv.payment_status == 'Đã thanh toán' %}
+                <tr
+                  class="clickable-row"
+                  data-invoice-id="{{ inv.invoice_id }}"
+                  data-treatment="{{ inv.treatment_name }}"
+                  data-appt="{{ inv.appointment_id }}"
+                  data-total="{{ inv.total_charge }}"
+                  data-discount="{{ inv.discount }}"
+                  data-final="{{ inv.final_charge }}"
+                  data-method="{{ inv.payment_method or 'Chưa xác định' }}"
+                  data-status="{{ inv.payment_status }}"
+                  data-date="{{ inv.invoice_date or '—' }}"
+                >
+                  <td><strong>{{ inv.treatment_name }}</strong></td>
+                  <td>#{{ inv.appointment_id }}</td>
+                  <td class="text-success fw-bold">
+                    {{ "{:,.0f}".format(inv.final_charge) }} đ
+                  </td>
+                  <td>
+                    <span class="badge bg-success">
+                      <i class="fas fa-check-circle me-1"></i>Đã thanh toán
+                    </span>
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="4" class="text-muted text-center p-3">
+                    Chưa có liệu trình nào đã thanh toán.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-wrapper" id="paginationPaid"></div>
+        </div>
+      </div>
+
+      <div id="view-profile" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Hồ sơ cá nhân</h1>
+          <div class="current-date">
+            <i class="far fa-calendar-check"></i>
+            <span class="date-render"></span>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Thông tin khách hàng</h4></div>
+          <div class="row g-4">
+            <div class="col-md-6">
+              <p class="mb-3 text-muted">
+                Họ và tên: <br /><strong class="text-dark fs-5"
+                  >{{ client.name }}</strong
+                >
+              </p>
+              <p class="mb-3 text-muted">
+                Ngày sinh: <br /><strong class="text-dark"
+                  >{{ client.date_of_birth }}</strong
+                >
+              </p>
+              <p class="mb-3 text-muted">
+                Giới tính: <br /><strong class="text-dark"
+                  >{{ 'Nam' if client.gender == 'M' else 'Nữ' }}</strong
+                >
+              </p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-3 text-muted">
+                Số điện thoại: <br /><strong class="text-dark"
+                  >{{ client.phone }}</strong
+                >
+              </p>
+              <p class="mb-3 text-muted">
+                Email: <br /><strong class="text-dark"
+                  >{{ client.email }}</strong
+                >
+              </p>
+              <p class="mb-3 text-muted">
+                Địa chỉ cư trú: <br /><strong class="text-dark"
+                  >{{ client.address }}</strong
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="invoice-overlay" id="invoiceOverlay">
+        <div class="invoice-modal">
+          <button class="invoice-modal-close" id="invoiceModalClose">
+            <i class="fas fa-times"></i>
+          </button>
+          <div class="invoice-modal-title" id="modalTreatmentName">—</div>
+          <div class="invoice-modal-sub">Chi tiết hoá đơn</div>
+
+          <div class="invoice-detail-row">
+            <span class="lbl"
+              ><i class="fas fa-hashtag me-1"></i>Mã hoá đơn</span
+            >
+            <span class="val" id="modalInvoiceId">—</span>
+          </div>
+          <div class="invoice-detail-row">
+            <span class="lbl"
+              ><i class="fas fa-calendar-check me-1"></i>Lịch hẹn số</span
+            >
+            <span class="val" id="modalApptId">—</span>
+          </div>
+          <div class="invoice-detail-row">
+            <span class="lbl"
+              ><i class="fas fa-calendar-alt me-1"></i>Ngày lập hoá đơn</span
+            >
+            <span class="val" id="modalDate">—</span>
+          </div>
+          <div class="invoice-detail-row">
+            <span class="lbl"
+              ><i class="fas fa-tags me-1"></i>Tổng tiền dịch vụ</span
+            >
+            <span class="val" id="modalTotal">—</span>
+          </div>
+          <div class="invoice-detail-row">
+            <span class="lbl"><i class="fas fa-percent me-1"></i>Giảm giá</span>
+            <span class="val text-success" id="modalDiscount">—</span>
+          </div>
+          <div class="invoice-detail-row">
+            <span class="lbl"
+              ><i class="fas fa-credit-card me-1"></i>Phương thức</span
+            >
+            <span class="val" id="modalMethod">—</span>
+          </div>
+          <div class="invoice-detail-row">
+            <span class="lbl"
+              ><i class="fas fa-circle-dot me-1"></i>Trạng thái</span
+            >
+            <span class="val" id="modalStatus">—</span>
+          </div>
+
+          <div class="invoice-final-box">
+            <span class="lbl">Thành tiền</span>
+            <span class="val" id="modalFinal">—</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/client_dashboard.js') }}"></script>
+  </body>
+</html>

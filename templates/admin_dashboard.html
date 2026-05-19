@@ -1,320 +1,499 @@
-<!DOCTYPE html>
+<!doctype html>
+<!-- khoi phuc thanh cong -->
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản Trị Viên - Nha Khoa Việt</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}" />
     <style>
-        body { background-color: #f8f9fa; }
-        .section-title {
-            border-left: 5px solid #0d6efd;
-            padding-left: 10px;
-            margin-top: 40px;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-        /* Chiều cao tối đa khoảng 7 dòng, vượt quá tự động hiện thanh cuộn */
-        .table-scrollable {
-            max-height: 420px; 
-            overflow-y: auto;
-        }
-        /* Cố định thanh tiêu đề bảng khi cuộn dữ liệu */
-        .table-scrollable thead th {
-            position: sticky;
-            top: 0;
-            background-color: #f8f9fa;
-            z-index: 1;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-        }
+      .sidebar-nav a:visited { color: inherit; }
+      .btn-today-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 16px;
+        border-radius: 8px;
+        border: 2px solid var(--primary, #3b82f6);
+        background: var(--primary, #3b82f6);
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.18s, color 0.18s;
+        margin-left: auto;
+      }
+      .btn-today-filter:hover {
+        background: var(--primary-dark, #2563eb);
+        border-color: var(--primary-dark, #2563eb);
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-title">VD</div>
+        <div class="brand-subtitle">Nha Khoa Việt</div>
+      </div>
+      <div class="user-welcome">
+        Admin,<br /><strong>{{ session['username'] }}</strong>
+      </div>
+      <ul class="sidebar-nav">
+        <li><a class="active" href="#" data-target="view-overview"><i class="fas fa-chart-pie"></i> Tổng quan</a></li>
+        <li><a href="#" data-target="view-appointments"><i class="fas fa-calendar-alt"></i> Quản lý lịch hẹn</a></li>
+        <li><a href="#" data-target="view-clients"><i class="fas fa-users"></i> Quản lý khách hàng</a></li>
+        <li><a href="#" data-target="view-employees"><i class="fas fa-id-badge"></i> Quản lý nhân viên</a></li>
+        <li><a href="#" data-target="view-services"><i class="fas fa-briefcase-medical"></i> Quản lý dịch vụ</a></li>
+        <li><a href="#" data-target="view-revenue"><i class="fas fa-chart-line"></i> Quản lý doanh thu</a></li>
+        <li><a href="#" data-target="view-profile"><i class="fas fa-user-shield"></i> Thông tin cá nhân</a></li>
+      </ul>
+      <div class="logout-section">
+        <a href="/logout" class="btn btn-danger w-100 fw-bold"><i class="fas fa-sign-out-alt me-2"></i> Đăng Xuất</a>
+      </div>
+    </aside>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="#"></a>
-            <div class="d-flex text-white align-items-center">
-                <span class="me-3">Quản trị viên: <strong>{{ session['username'] }}</strong></span>
-                <a href="/logout" class="btn btn-danger btn-sm">Đăng xuất</a>
-            </div>
+    <main class="main-wrapper">
+      
+      <div id="view-overview" class="dashboard-view active-view">
+        <div class="page-header">
+          <h1 class="page-title">Tổng quan</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
         </div>
-    </nav>
 
-    <div class="container mb-5 pb-5">
+        <div class="row g-4 mb-4">
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="info"><p>Lịch hẹn hôm nay</p><h3>{{ stats.appt_today }}</h3></div>
+              <div class="icon icon-blue"><i class="fas fa-calendar-day"></i></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="info"><p>Số nhân viên</p><h3>{{ stats.emp_count }}</h3></div>
+              <div class="icon icon-green"><i class="fas fa-user-md"></i></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="info"><p>Doanh thu hôm nay</p><h3 class="text-danger">{{ "{:,.0f}".format(stats.revenue_today) }} đ</h3></div>
+              <div class="icon icon-orange"><i class="fas fa-wallet"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-section mb-4">
+          <div class="section-header"><h4>Lịch hẹn khám hôm nay</h4></div>
+          <div class="table-responsive table-scrollable">
+            <table class="table align-middle">
+              <thead><tr><th>STT</th><th>Tên khách hàng</th><th>Thời gian</th><th>Tuổi</th><th>Giới tính</th><th>Nha sĩ tiếp nhận</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                {% set count = namespace(value=1) %}
+                {% for appt in appointments if appt.is_today %}
+                <tr>
+                  <td class="text-muted">{{ count.value }}</td>
+                  <td class="fw-bold">{{ appt.client_name }}</td>
+                  <td><i class="far fa-clock me-1 text-primary"></i>{{ appt.time_str }}</td>
+                  <td>{{ appt.age }}</td>
+                  <td>{{ 'Nam' if appt.gender == 'M' else 'Nữ' }}</td>
+                  <td>BS. {{ appt.dentist_name }}</td>
+                  <td><span class="badge {% if appt.appointment_status == 'Đã khám' %}bg-success{% elif appt.appointment_status == 'Đã đặt lịch' %}bg-warning text-dark{% elif appt.appointment_status == 'Vắng mặt' %}bg-secondary{% else %}bg-danger{% endif %}">{{ appt.appointment_status }}</span></td>
+                </tr>
+                {% set count.value = count.value + 1 %}
+                {% else %}
+                <tr><td colspan="7" class="text-muted text-center p-4">Không có Lịch hẹn hôm nay.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Doanh thu nhân viên (hôm nay)</h4></div>
+          <div class="table-responsive table-scrollable">
+            <table class="table align-middle">
+              <thead><tr><th>STT</th><th>Tên nhân viên</th><th>Số khách hàng</th><th>Doanh thu</th></tr></thead>
+              <tbody>
+                {% set count2 = namespace(value=1) %}
+                {% for r in rev_employees if r.is_today == 1 %}
+                <tr>
+                  <td>{{ count2.value }}</td>
+                  <td class="fw-bold">{{ r.name }}</td>
+                  <td>{{ r.customers }}</td>
+                  <td class="text-danger fw-bold">{{ "{:,.0f}".format(r.revenue) }} đ</td>
+                </tr>
+                {% set count2.value = count2.value + 1 %}
+                {% else %}
+                <tr><td colspan="4" class="text-muted text-center p-4">Chưa có doanh thu hôm nay.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-appointments" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý lịch hẹn</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
         
-        <h4 class="section-title text-primary">1. Thống kê chỉ số hiệu suất doanh thu</h4>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="card bg-success text-white border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <h6 class="card-title text-uppercase opacity-75">Tổng doanh thu phòng khám</h6>
-                        <h2 class="fw-bold mb-0">{{ "{:,.0f}".format(stats.revenue) }} VNĐ</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-primary text-white border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <h6 class="card-title text-uppercase opacity-75">Tổng số bệnh nhân lưu trữ</h6>
-                        <h2 class="fw-bold mb-0">{{ stats.patients }} người</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card bg-warning text-dark border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <h6 class="card-title text-uppercase opacity-75">Tổng số ca khám / lịch hẹn</h6>
-                        <h2 class="fw-bold mb-0">{{ stats.appointments }} ca</h2>
-                    </div>
-                </div>
-            </div>
+        <div class="filter-bar">
+          <span class="filter-label">Lọc:</span>
+          <select id="apptStatusFilter" class="filter-select">
+            <option value="">Tất cả trạng thái</option>
+            <option value="Đã đặt lịch">Đã đặt lịch</option>
+            <option value="Đã khám">Đã khám</option>
+            <option value="Vắng mặt">Vắng mặt</option>
+            <option value="Đã huỷ">Đã huỷ</option>
+          </select>
+          <select id="apptFilterYear" class="filter-select">
+            <option value="">Tất cả năm</option>
+          </select>
+          <select id="apptFilterMonth" class="filter-select">
+            <option value="">Tất cả tháng</option>
+            <option value="01">Tháng 1</option>
+            <option value="02">Tháng 2</option>
+            <option value="03">Tháng 3</option>
+            <option value="04">Tháng 4</option>
+            <option value="05">Tháng 5</option>
+            <option value="06">Tháng 6</option>
+            <option value="07">Tháng 7</option>
+            <option value="08">Tháng 8</option>
+            <option value="09">Tháng 9</option>
+            <option value="10">Tháng 10</option>
+            <option value="11">Tháng 11</option>
+            <option value="12">Tháng 12</option>
+          </select>
+          <select id="apptFilterDay" class="filter-select">
+            <option value="">Tất cả ngày</option>
+          </select>
+          <button class="btn-reset-filter" id="btnResetApptFilter"><i class="fas fa-undo me-1"></i>Đặt lại</button>
+          <button class="btn-today-filter" id="btnTodayAppt"><i class="fas fa-calendar-day me-1"></i>Hôm nay</button>
         </div>
 
-        <div class="row">
-            
-            <div class="col-lg-5">
-                <h4 class="section-title text-danger">2. Quản lý biểu giá dịch vụ</h4>
-                
-                <div class="card shadow-sm border-0 mb-4 bg-white">
-                    <div class="card-header bg-danger text-white fw-bold">Thêm gói dịch vụ mới</div>
-                    <div class="card-body">
-                        <form method="POST" action="/admin_add_procedure">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Tên dịch vụ kỹ thuật</label>
-                                <input type="text" name="procedure_name" class="form-control" placeholder="Ví dụ: Tẩy trắng răng Laser" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Đơn giá niêm yết (VNĐ)</label>
-                                <input type="number" name="procedure_fee" class="form-control" placeholder="Ví dụ: 2500000" min="0" required>
-                            </div>
-                            <button type="submit" class="btn btn-danger w-100 shadow-sm">Thêm vào danh mục</button>
-                        </form>
-                    </div>
-                </div>
+        <div class="content-section">
+          <div class="table-responsive">
+            <table class="table align-middle" id="apptTable">
+              <thead><tr><th>Tên khách hàng</th><th>Ngày</th><th>Thời gian</th><th>Lý do</th><th>Nha sĩ tiếp nhận</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                {% for appt in appointments %}
+                <tr class="appt-row {% if appt.is_today %}is-today{% endif %} {% if appt.date_of_appointment > today %}is-upcoming{% endif %} {% if appt.date_of_appointment < today %}is-past{% endif %}" data-status="{{ appt.appointment_status }}" {% if not appt.is_today %}style="display:none;"{% endif %}>
+                    <td class="fw-bold">{{ appt.client_name }}</td>
+                    <td>{{ appt.date_of_appointment }}</td>
+                    <td><i class="far fa-clock me-1 text-primary"></i>{{ appt.time_str }}</td>
+                    <td>{{ appt.reason or '—' }}</td>
+                    <td>BS. {{ appt.dentist_name }}</td>
+                    <td>
+                      <button class="btn btn-sm fw-bold shadow-sm {% if appt.appointment_status == 'Đã khám' %}bg-success text-white {% elif appt.appointment_status == 'Đã đặt lịch' %}bg-warning text-dark {% elif appt.appointment_status == 'Vắng mặt' %}bg-secondary text-white {% else %}bg-danger text-white{% endif %}" style="border-radius: 8px" onclick="openStatusModal({{ appt.appointment_id }}, 'admin', this)">
+                        {{ appt.appointment_status }} <i class="fas fa-edit ms-1" style="font-size: 0.75rem; opacity: 0.8"></i>
+                      </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-muted text-center p-4">Không có lịch hẹn nào.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-wrapper" id="paginationAppt"></div>
+        </div>
+      </div>
 
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-0">
-                        <div class="table-responsive table-scrollable">
-                            <table id="procedureTable" class="table table-striped table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th onclick="sortTable(0, 'procedureTable')" style="cursor: pointer;">Mã ⇅</th>
-                                        <th onclick="sortTable(1, 'procedureTable')" style="cursor: pointer;">Tên gói kỹ thuật ⇅</th>
-                                        <th onclick="sortTable(2, 'procedureTable')" style="cursor: pointer;">Giá niêm yết ⇅</th>
-                                        <th>Hành động</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for proc in procedures %}
-                                    <tr>
-                                        <td>{{ proc.procedure_code }}</td>
-                                        <td><strong>{{ proc.procedure_name }}</strong></td>
-                                        <td class="text-danger fw-bold">{{ "{:,.0f}".format(proc.procedure_fee) }} đ</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-warning py-0 px-2 shadow-sm text-dark" 
-                                                    onclick="openEditModal('{{ proc.procedure_code }}', '{{ proc.procedure_name }}', '{{ proc.procedure_fee }}')">
-                                                Sửa
-                                            </button>
-                                            <a href="/admin_delete_procedure/{{ proc.procedure_code }}" 
-                                               class="btn btn-sm btn-danger py-0 px-2 shadow-sm" 
-                                               onclick="return confirm('Bạn có chắc chắn muốn xóa dịch vụ này không?')">
-                                                Xóa
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+      <div id="view-clients" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý khách hàng</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+        <div class="d-flex gap-3 mb-4 align-items-center">
+            <div class="search-wrapper m-0 flex-grow-1">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="clientSearchInput" class="search-bar" placeholder="Tìm kiếm khách hàng theo tên..." />
+            </div>
+            <button class="btn btn-primary fw-bold px-4 shadow-sm" style="border-radius: 8px; height: 50px;" onclick="alert('Tính năng thêm bằng Admin đang bảo trì, vui lòng dùng tài khoản Lễ tân để thêm mới.')">
+                <i class="fas fa-user-plus me-2"></i>Thêm khách hàng
+            </button>
+        </div>
+        
+        <div class="grid-container">
+            <div class="item-grid" id="clientGridRender">
+                {% for p in clients %}
+                <div class="person-card client-card" data-name="{{ p.name | lower }}" onclick="openEditClientModal('{{ p.client_id }}','{{ p.name }}','{{ p.gender }}','{{ p.date_of_birth }}','{{ p.phone }}','{{ p.email or '' }}','{{ p.address }}','{{ p.pin or '' }}','{{ p.username or '' }}')">
+                    <div class="avatar-circle {% if not p.username %}bg-danger text-white{% endif %}">{{ p.name[0] | upper }}</div>
+                    <div class="person-info">
+                        <div class="person-name">{{ p.name }}</div>
+                        <div class="person-sub">
+                            {% if p.username %} {{ p.phone }} {% else %} <span class="text-danger fw-bold"><i class="fas fa-lock"></i> Đã khóa</span> {% endif %}
                         </div>
                     </div>
                 </div>
+                {% else %}
+                <p class="text-muted p-3">Chưa có khách hàng nào.</p>
+                {% endfor %}
             </div>
+        </div>
+      </div>
 
-            <div class="col-lg-7">
-                <h4 class="section-title text-info">3. Quản lý nhân sự phòng khám</h4>
-                
-                <div class="card shadow-sm border-0 mb-4 bg-white">
-                    <div class="card-header bg-info text-white fw-bold">Cấp tài khoản & Hồ sơ nhân viên mới</div>
-                    <div class="card-body">
-                        <form method="POST" action="/admin_add_employee">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Họ và Tên</label>
-                                    <input type="text" name="name" class="form-control" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Số CCCD / PIN</label>
-                                    <input type="text" name="employee_pin" class="form-control" required placeholder="12 số định danh">
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Chức vụ lâm sàng</label>
-                                    <select name="employee_type" class="form-select" required>
-                                        <option value="d">Bác sĩ Nha khoa</option>
-                                        <option value="h">Phụ tá phòng khám</option>
-                                        <option value="r">Nhân viên Lễ tân</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Giới tính</label>
-                                    <select name="gender" class="form-select" required>
-                                        <option value="M">Nam</option>
-                                        <option value="F">Nữ</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Mức lương cố định</label>
-                                    <input type="number" name="salary" class="form-control" required placeholder="Lương VNĐ">
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Số điện thoại</label>
-                                    <input type="text" name="phone" class="form-control" required>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Email</label>
-                                    <input type="email" name="email" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Địa chỉ thường trú</label>
-                                <input type="text" name="address" class="form-control" required>
-                            </div>
-                            <div class="row mb-4">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Tên đăng nhập mới</label>
-                                    <input type="text" name="username" class="form-control" required placeholder="Ví dụ: bshung">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Mật khẩu</label>
-                                    <input type="password" name="password" class="form-control" required placeholder="Tối thiểu 6 ký tự">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-info text-white w-100 shadow-sm">Kích hoạt hồ sơ & tài khoản</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-0">
-                        <div class="table-responsive table-scrollable">
-                            <table id="employeeTable" class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th onclick="sortTable(0, 'employeeTable')" style="cursor: pointer;">ID ⇅</th>
-                                        <th onclick="sortTable(1, 'employeeTable')" style="cursor: pointer;">Họ tên nhân viên ⇅</th>
-                                        <th onclick="sortTable(2, 'employeeTable')" style="cursor: pointer;">Chức vụ ⇅</th>
-                                        <th onclick="sortTable(3, 'employeeTable')" style="cursor: pointer;">Mức lương ⇅</th>
-                                        <th>Tài khoản</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for emp in employees %}
-                                    <tr>
-                                        <td>{{ emp.employee_id }}</td>
-                                        <td><strong>{{ emp.name }}</strong><br><small class="text-muted">{{ emp.phone }}</small></td>
-                                        <td>
-                                            {% if emp.employee_type == 'd' %}<span class="badge bg-primary">Bác sĩ</span>
-                                            {% elif emp.employee_type == 'h' %}<span class="badge bg-secondary">Phụ tá</span>
-                                            {% elif emp.employee_type == 'r' %}<span class="badge bg-success">Lễ tân</span>
-                                            {% elif emp.employee_type == 'a' %}<span class="badge bg-dark">Quản trị viên</span>{% endif %}
-                                        </td>
-                                        <td class="fw-bold text-success">{{ "{:,.0f}".format(emp.salary) }} đ</td>
-                                        <td><span class="text-muted">{{ emp.username if emp.username else 'Chưa cấp' }}</span></td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+      <div id="view-employees" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý nhân viên</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+        <div class="d-flex gap-3 mb-4 align-items-center">
+            <div class="search-wrapper m-0 flex-grow-1">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="empSearchInput" class="search-bar" placeholder="Tìm kiếm nhân viên theo tên..." />
+            </div>
+            <button class="btn btn-primary fw-bold px-4 shadow-sm" style="border-radius: 8px; height: 50px;" onclick="alert('Tính năng tạo nhân viên đang bảo trì.')">
+                <i class="fas fa-user-plus me-2"></i>Thêm nhân viên
+            </button>
+        </div>
+        
+        <div class="grid-container">
+            <div class="item-grid" id="empGridRender">
+                {% for emp in employees %}
+                <div class="person-card emp-card" data-name="{{ emp.name | lower }}" onclick="openEditEmpModal('{{ emp.employee_id }}','{{ emp.name }}','{{ emp.gender }}','{{ emp.date_of_birth }}','{{ emp.phone }}','{{ emp.email or '' }}','{{ emp.address }}','{{ emp.employee_pin or '' }}','{{ emp.salary }}','{{ emp.username or '' }}')">
+                    <div class="avatar-circle {% if not emp.username %}bg-danger text-white{% endif %}">{{ emp.name[0] | upper }}</div>
+                    <div class="person-info">
+                        <div class="person-name">{{ emp.name }}</div>
+                        <div class="person-sub">
+                            {% if emp.username %} 
+                                {{ 'Nha sĩ' if emp.employee_type == 'd' else 'Lễ tân' if emp.employee_type == 'r' else 'Admin' }} 
+                            {% else %} 
+                                <span class="text-danger fw-bold"><i class="fas fa-lock"></i> Đã khóa</span> 
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-
+                {% endfor %}
             </div>
         </div>
+      </div>
+
+      <div id="view-services" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý dịch vụ</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+        <div class="d-flex gap-3 mb-4 align-items-center">
+            <div class="search-wrapper m-0 flex-grow-1">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="srvSearchInput" class="search-bar" placeholder="Tìm kiếm dịch vụ theo tên..." />
+            </div>
+            <button class="btn btn-primary fw-bold px-4 shadow-sm" style="border-radius: 8px; height: 50px;" onclick="openAddServiceModal()">
+                <i class="fas fa-plus me-2"></i>Thêm dịch vụ
+            </button>
+        </div>
+
+        <div class="grid-container">
+          <div class="item-grid" id="srvGridRender" style="grid-template-columns: repeat(2, 1fr)">
+            {% for srv in services %}
+            <div class="service-card srv-card" data-name="{{ srv.name | lower }}">
+              <div class="service-left" onclick="openEditServiceModal('{{ srv.id }}', '{{ srv.name }}', '{{ srv.price }}')" style="flex-grow:1">
+                <div class="service-id-icon">#{{ srv.id }}</div>
+                <h4 class="service-name">{{ srv.name }}</h4>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="service-price">{{ "{:,.0f}".format(srv.price) }} đ</div>
+                <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteService('{{ srv.id }}')"><i class="fas fa-trash-alt"></i></button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div id="view-revenue" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý doanh thu</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+
+        <div class="filter-bar">
+          <span class="filter-label">Lọc thời gian:</span>
+          <select id="revFilterYear" class="filter-select">
+            <option value="">Tất cả năm</option>
+          </select>
+          <select id="revFilterMonth" class="filter-select">
+            <option value="">Tất cả tháng</option>
+            <option value="01">Tháng 1</option>
+            <option value="02">Tháng 2</option>
+            <option value="03">Tháng 3</option>
+            <option value="04">Tháng 4</option>
+            <option value="05">Tháng 5</option>
+            <option value="06">Tháng 6</option>
+            <option value="07">Tháng 7</option>
+            <option value="08">Tháng 8</option>
+            <option value="09">Tháng 9</option>
+            <option value="10">Tháng 10</option>
+            <option value="11">Tháng 11</option>
+            <option value="12">Tháng 12</option>
+          </select>
+          <select id="revFilterDay" class="filter-select">
+            <option value="">Tất cả ngày</option>
+          </select>
+          <button class="btn-reset-filter" id="btnResetRevFilter"><i class="fas fa-undo me-1"></i>Đặt lại</button>
+          <button class="btn-today-filter" id="btnTodayRev"><i class="fas fa-calendar-day me-1"></i>Hôm nay</button>
+        </div>
+
+        <div class="content-section mb-4">
+          <div class="section-header"><h4>Doanh Thu Từ Nhân Viên</h4></div>
+          <div class="table-responsive table-scrollable">
+            <table class="table align-middle" id="revEmpTable">
+              <thead><tr><th>STT</th><th>Ngày</th><th>Tên nhân viên</th><th>Số khách hàng</th><th>Doanh thu</th></tr></thead>
+              <tbody>
+                {% for r in rev_employees %}
+                <tr class="rev-row {% if r.is_today == 1 %}is-today{% endif %}" data-date="{{ r.date or '' }}" {% if r.is_today != 1 %}style="display:none;"{% endif %}>
+                  <td>{{ loop.index }}</td>
+                  <td class="text-muted">{{ r.date }}</td>
+                  <td class="fw-bold">{{ r.name }}</td>
+                  <td>{{ r.customers }}</td>
+                  <td class="text-danger fw-bold">{{ "{:,.0f}".format(r.revenue) }} đ</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <div class="section-header"><h4>Doanh Thu Từ Dịch Vụ</h4></div>
+          <div class="table-responsive table-scrollable">
+            <table class="table align-middle" id="revSrvTable">
+              <thead><tr><th>STT</th><th>Ngày</th><th>Tên dịch vụ</th><th>Số lượng sử dụng</th><th>Doanh thu</th></tr></thead>
+              <tbody>
+                {% for s in rev_services %}
+                <tr class="rev-row {% if s.is_today == 1 %}is-today{% endif %}" data-date="{{ s.date or '' }}" {% if s.is_today != 1 %}style="display:none;"{% endif %}>
+                  <td>{{ loop.index }}</td>
+                  <td class="text-muted">{{ s.date }}</td>
+                  <td class="fw-bold text-primary">{{ s.name }}</td>
+                  <td>{{ s.usage_count }}</td>
+                  <td class="text-success fw-bold">{{ "{:,.0f}".format(s.revenue) }} đ</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>  
+
+      <div id="view-profile" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Thông tin cá nhân</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+        <div class="content-section">
+          <div class="section-header"><h4>Thông tin quản trị viên</h4></div>
+          <div class="row g-4">
+            <div class="col-md-6">
+              <p class="mb-3 text-muted">
+                Họ và tên: <br /><strong class="text-dark fs-5">{{ admin.name }}</strong>
+              </p>
+              <p class="mb-3 text-muted">
+                Mã định danh (CCCD): <br /><strong class="text-dark">{{ admin.employee_pin }}</strong>
+              </p>
+              <p class="mb-3 text-muted">
+                Giới tính: <br /><strong class="text-dark">{{ 'Nam' if admin.gender == 'M' else 'Nữ' }}</strong>
+              </p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-3 text-muted">
+                Số điện thoại: <br /><strong class="text-dark">{{ admin.phone }}</strong>
+              </p>
+              <p class="mb-3 text-muted">
+                Email: <br /><strong class="text-dark">{{ admin.email }}</strong>
+              </p>
+              <p class="mb-3 text-muted">
+                Thu nhập cơ bản: <br /><strong class="text-success fs-5">{{ "{:,.0f}".format(admin.salary) }} VNĐ</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="invoice-overlay" id="statusModalOverlay">
+      <div class="invoice-modal" style="max-width: 320px; text-align: center; padding: 24px">
+        <button class="invoice-modal-close" onclick="document.getElementById('statusModalOverlay').classList.remove('open')"><i class="fas fa-times"></i></button>
+        <div class="invoice-modal-title mb-2"><i class="fas fa-exchange-alt me-2 text-primary"></i>Đổi trạng thái</div>
+        <p class="text-muted mb-4" style="font-size: 0.85rem">Cập nhật trạng thái mới cho lịch hẹn này:</p>
+        <input type="hidden" id="modalApptId" />
+        <div class="d-grid gap-3">
+          <button class="btn btn-warning fw-bold text-dark shadow-sm" onclick="submitStatusChange('Đã đặt lịch')">Đã đặt lịch</button>
+          <button class="btn btn-success fw-bold shadow-sm" onclick="submitStatusChange('Đã khám')">Đã khám</button>
+          <button class="btn btn-secondary fw-bold shadow-sm" onclick="submitStatusChange('Vắng mặt')">Vắng mặt</button>
+          <button class="btn btn-danger fw-bold shadow-sm" onclick="submitStatusChange('Đã huỷ')">Đã huỷ</button>
+        </div>
+      </div>
     </div>
 
-    <div class="modal fade" id="editProcedureModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-warning text-dark fw-bold">
-                    <h5 class="modal-title">Cập nhật thông tin dịch vụ</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="POST" action="/admin_edit_procedure">
-                    <div class="modal-body">
-                        <input type="hidden" name="procedure_code" id="edit_procedure_code">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Tên dịch vụ kỹ thuật</label>
-                            <input type="text" name="procedure_name" id="edit_procedure_name" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Đơn giá niêm yết (VNĐ)</label>
-                            <input type="number" name="procedure_fee" id="edit_procedure_fee" class="form-control" min="0" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-warning shadow-sm">Lưu thay đổi</button>
-                    </div>
-                </form>
-            </div>
+    <div class="invoice-overlay" id="editClientOverlay">
+      <div class="invoice-modal" style="max-width: 500px">
+        <button class="invoice-modal-close" onclick="document.getElementById('editClientOverlay').classList.remove('open')"><i class="fas fa-times"></i></button>
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="avatar-circle" style="width: 56px; height: 56px; font-size: 1.4rem" id="editAvatar">?</div>
+          <div><div class="invoice-modal-title" id="editHeaderName">—</div><div class="invoice-modal-sub mb-0" id="editHeaderId">—</div></div>
         </div>
+        <input type="hidden" id="editId" />
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Họ tên</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input" id="editName" oninput="checkClientEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Giới tính</span><select class="form-select form-select-sm w-50 text-end edit-input" id="editGender" onchange="checkClientEdit()"><option value="M">Nam</option><option value="F">Nữ</option></select></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Ngày sinh</span><input type="date" class="form-control form-control-sm text-end w-50 edit-input" id="editDob" oninput="checkClientEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Điện thoại</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input" id="editPhone" oninput="checkClientEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Email</span><input type="email" class="form-control form-control-sm text-end w-50 edit-input" id="editEmail" oninput="checkClientEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Địa chỉ</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input" id="editAddress" oninput="checkClientEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">CCCD/PIN</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input" id="editPin" oninput="checkClientEdit()" /></div>
+        
+        <h6 class="mt-4 mb-2 text-primary fw-bold border-top pt-3"><i class="fas fa-key me-2"></i>Tài khoản đăng nhập</h6>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Username</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input" id="editUser" oninput="checkClientEdit()" placeholder="Nhập để tạo mới nếu chưa có" /></div>
+        <div class="invoice-detail-row align-items-center border-0"><span class="lbl">Mật khẩu mới</span><input type="password" class="form-control form-control-sm text-end w-50 edit-input" id="editPass" oninput="checkClientEdit()" placeholder="Bỏ trống nếu không đổi" /></div>
+        
+        <div class="d-flex justify-content-between mt-4">
+          <button class="btn btn-outline-danger fw-bold px-3" onclick="lockClient()"><i class="fas fa-lock me-2"></i>Khóa truy cập</button>
+          <button id="btnSaveClient" class="btn btn-secondary fw-bold px-4" disabled onclick="submitEditClient()"><i class="fas fa-save me-2"></i>Lưu</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="invoice-overlay" id="editEmpOverlay">
+      <div class="invoice-modal" style="max-width: 500px">
+        <button class="invoice-modal-close" onclick="document.getElementById('editEmpOverlay').classList.remove('open')"><i class="fas fa-times"></i></button>
+        <div class="invoice-modal-title mb-4"><i class="fas fa-user-md me-2 text-primary"></i>Sửa Thông Tin Nhân Viên</div>
+        <input type="hidden" id="empId" />
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Họ tên</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empName" oninput="checkEmpEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Giới tính</span><select class="form-select form-select-sm w-50 text-end edit-input-emp" id="empGender" onchange="checkEmpEdit()"><option value="M">Nam</option><option value="F">Nữ</option></select></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Ngày sinh</span><input type="date" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empDob" oninput="checkEmpEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Điện thoại</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empPhone" oninput="checkEmpEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Email</span><input type="email" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empEmail" oninput="checkEmpEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Địa chỉ</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empAddress" oninput="checkEmpEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">CCCD/PIN</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empPin" oninput="checkEmpEdit()" /></div>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Lương CB</span><input type="number" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empSalary" oninput="checkEmpEdit()" /></div>
+        
+        <h6 class="mt-4 mb-2 text-primary fw-bold border-top pt-3"><i class="fas fa-key me-2"></i>Tài khoản đăng nhập</h6>
+        <div class="invoice-detail-row align-items-center"><span class="lbl">Username</span><input type="text" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empUser" oninput="checkEmpEdit()" /></div>
+        <div class="invoice-detail-row align-items-center border-0"><span class="lbl">Mật khẩu mới</span><input type="password" class="form-control form-control-sm text-end w-50 edit-input-emp" id="empPass" oninput="checkEmpEdit()" placeholder="Bỏ trống nếu không đổi" /></div>
+        
+        <div class="d-flex justify-content-between mt-4">
+          <button class="btn btn-outline-danger fw-bold px-3" onclick="lockEmployee()"><i class="fas fa-lock me-2"></i>Khóa truy cập</button>
+          <button id="btnSaveEmp" class="btn btn-secondary fw-bold px-4" disabled onclick="submitEditEmployee()"><i class="fas fa-save me-2"></i>Lưu</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="invoice-overlay" id="srvModalOverlay">
+      <div class="invoice-modal" style="max-width: 400px">
+        <button class="invoice-modal-close" onclick="document.getElementById('srvModalOverlay').classList.remove('open')"><i class="fas fa-times"></i></button>
+        <div class="invoice-modal-title mb-4" id="srvModalTitle">Dịch Vụ</div>
+        <input type="hidden" id="srvId" />
+        <label class="form-label">Tên dịch vụ</label><input type="text" id="srvName" class="form-control mb-3" />
+        <label class="form-label">Giá tiền (VNĐ)</label><input type="number" id="srvPrice" class="form-control mb-4" />
+        <button class="btn btn-primary w-100 fw-bold" onclick="submitService()"><i class="fas fa-save me-2"></i>Lưu</button>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-    window.addEventListener('beforeunload', () => {
-        sessionStorage.setItem('saved_scroll_position', window.scrollY);
-    });
-    window.addEventListener('DOMContentLoaded', () => {
-        const scrollPosition = sessionStorage.getItem('saved_scroll_position');
-        if (scrollPosition) {
-            window.scrollTo(0, parseInt(scrollPosition));
-            sessionStorage.removeItem('saved_scroll_position');
-        }
-    });
-    </script>
-
-    <script>
-    function openEditModal(code, name, fee) {
-        document.getElementById('edit_procedure_code').value = code;
-        document.getElementById('edit_procedure_name').value = name;
-        document.getElementById('edit_procedure_fee').value = fee;
-        
-        var myModal = new bootstrap.Modal(document.getElementById('editProcedureModal'));
-        myModal.show();
-    }
-    </script>
-
-    <script>
-    function sortTable(columnIndex, tableId) {
-        let table = document.getElementById(tableId);
-        let tbody = table.querySelector("tbody");
-        if (!tbody) return;
-        
-        let rows = Array.from(tbody.querySelectorAll("tr"));
-        let currentDir = table.getAttribute("data-sort-dir-" + columnIndex) || "desc";
-        let nextDir = currentDir === "asc" ? "desc" : "asc";
-        
-        rows.sort((rowA, rowB) => {
-            let cellA = rowA.getElementsByTagName("td")[columnIndex].textContent.trim();
-            let cellB = rowB.getElementsByTagName("td")[columnIndex].textContent.trim();
-            
-            let cleanA = cellA.replace(/[^0-9.-]/g, "");
-            let cleanB = cellB.replace(/[^0-9.-]/g, "");
-            
-            if (cleanA !== "" && cleanB !== "" && !isNaN(cleanA) && !isNaN(cleanB)) {
-                return nextDir === "asc" ? parseFloat(cleanA) - parseFloat(cleanB) : parseFloat(cleanB) - parseFloat(cleanA);
-            }
-            return nextDir === "asc" ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
-        });
-        
-        table.setAttribute("data-sort-dir-" + columnIndex, nextDir);
-        rows.forEach(row => tbody.appendChild(row));
-    }
-    </script>
-</body>
+    <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+  </body>
 </html>

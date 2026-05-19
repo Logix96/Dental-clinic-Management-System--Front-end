@@ -1,0 +1,492 @@
+<!doctype html>
+<!-- khoi phuc thanh cong-->
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bảng Điều Khiển Nha Sĩ - Nha Khoa Việt</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dentist_dashboard.css') }}" />
+    <style>
+      .sidebar-nav a:visited { color: inherit; }
+      .btn-today-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 16px;
+        border-radius: 8px;
+        border: 2px solid var(--primary, #3b82f6);
+        background: var(--primary, #3b82f6);
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.18s, color 0.18s;
+        margin-left: auto;
+      }
+      .btn-today-filter:hover {
+        background: var(--primary-dark, #2563eb);
+        border-color: var(--primary-dark, #2563eb);
+      }
+    </style>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-title">VD</div>
+        <div class="brand-subtitle">Nha Khoa Việt</div>
+      </div>
+      <div class="user-welcome">
+        Bác sĩ,<br /><strong>{{ session['username'] }}</strong>
+      </div>
+      <ul class="sidebar-nav">
+        <li><a class="active" href="#" data-target="view-overview"><i class="fas fa-chart-pie"></i> Tổng Quan</a></li>
+        <li><a href="#" data-target="view-clients"><i class="fas fa-users"></i> Hồ Sơ Khách Hàng</a></li>
+        <li><a href="#" data-target="view-appointments"><i class="fas fa-calendar-alt"></i> Quản Lý Lịch Hẹn</a></li>
+        <li><a href="#" data-target="view-treatments"><i class="fas fa-file-medical"></i> Liệu Trình Dịch Vụ</a></li>
+        <li><a href="#" data-target="view-xrays"><i class="fas fa-x-ray"></i> X-Rays</a></li>
+        <li><a href="#" data-target="view-profile"><i class="fas fa-user-md"></i> Thông Tin Cá Nhân</a></li>
+      </ul>
+      <div class="logout-section">
+        <a href="/logout" class="btn btn-danger w-100" style="border-radius:8px;font-weight:600">
+          <i class="fas fa-sign-out-alt me-2"></i> Đăng Xuất
+        </a>
+      </div>
+    </aside>
+
+    <main class="main-wrapper">
+      <div id="view-overview" class="dashboard-view active-view">
+        <div class="page-header">
+          <h1 class="page-title">Tổng quan</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="info">
+                <p>Lịch hẹn hôm nay</p>
+                <h3 id="statTodayCount">0</h3>
+              </div>
+              <div class="icon icon-blue"><i class="fas fa-calendar-day"></i></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="info">
+                <p>Tổng bệnh nhân</p>
+                <h3 id="statClientCount">0</h3>
+              </div>
+              <div class="icon icon-green"><i class="fas fa-user-injured"></i></div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="info">
+                <p>Liệu trình đã lập</p>
+                <h3 id="statTreatmentCount">0</h3>
+              </div>
+              <div class="icon icon-orange"><i class="fas fa-file-medical-alt"></i></div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="content-section">
+          <div class="section-header"><h4>Lịch hẹn khám hôm nay</h4></div>
+          <div class="table-responsive">
+            <table class="table align-middle" id="overviewTodayTable">
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Tên Khách Hàng</th>
+                  <th>Thời Gian</th>
+                  <th>Tuổi</th>
+                  <th>Giới Tính</th>
+                  <th>Lý Do</th>
+                  <th>Trạng Thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% set count = namespace(value=1) %}
+                {% for appt in appointments if appt.is_today %}
+                <tr>
+                  <td class="text-muted">{{ count.value }}</td>
+                  <td class="fw-bold">{{ appt.client_name }}</td>
+                  <td><i class="far fa-clock me-1 text-primary"></i>{{ appt.time_str }}</td>
+                  <td>{{ appt.age }}</td>
+                  <td>{{ 'Nam' if appt.gender == 'M' else 'Nữ' }}</td>
+                  <td>{{ appt.reason or '—' }}</td>
+                  <td>
+                    <span class="badge {% if appt.appointment_status == 'Đã khám' %}bg-success{% elif appt.appointment_status == 'Đã đặt lịch' %}bg-warning text-dark{% elif appt.appointment_status == 'Vắng mặt' %}bg-secondary{% else %}bg-danger{% endif %}">
+                      {{ appt.appointment_status }}
+                    </span>
+                  </td>
+                </tr>
+                {% set count.value = count.value + 1 %}
+                {% else %}
+                <tr><td colspan="7" class="text-muted text-center p-4"><i class="fas fa-calendar-check me-2"></i>Không có lịch hẹn nào hôm nay.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-clients" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Hồ sơ khách hàng</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+        <div class="search-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="clientSearchInput" class="search-bar" placeholder="Tìm kiếm khách hàng theo tên..." />
+        </div>
+        <div class="client-grid-container">
+          <div class="client-grid" id="clientGridRender">
+            {% for p in clients %}
+            <div class="client-card" data-name="{{ p.name | lower }}"
+                 onclick="openclientModal('{{ p.client_id }}','{{ p.name }}','{{ p.gender }}','{{ p.date_of_birth }}','{{ p.phone }}','{{ p.email or '' }}','{{ p.address }}','{{ p.pin or '' }}')">
+              <div class="avatar-circle">{{ p.name[0] | upper }}</div>
+              <div class="client-info">
+                <div class="client-name">{{ p.name }}</div>
+                <div class="client-email">{{ p.phone }}</div>
+              </div>
+            </div>
+            {% else %}
+            <p class="text-muted p-3">Chưa có bệnh nhân nào.</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="invoice-overlay" id="clientDetailOverlay">
+          <div class="invoice-modal" style="max-width:520px">
+            <button class="invoice-modal-close" onclick="document.getElementById('clientDetailOverlay').classList.remove('open')">
+              <i class="fas fa-times"></i>
+            </button>
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <div class="avatar-circle" style="width:56px;height:56px;font-size:1.4rem" id="modalclientAvatar">?</div>
+              <div>
+                <div class="invoice-modal-title" id="modalclientName">—</div>
+                <div class="invoice-modal-sub mb-0" id="modalclientId">—</div>
+              </div>
+            </div>
+            <div class="invoice-detail-row"><span class="lbl"><i class="fas fa-venus-mars me-1"></i>Giới tính</span><span class="val" id="modalclientGender">—</span></div>
+            <div class="invoice-detail-row"><span class="lbl"><i class="fas fa-birthday-cake me-1"></i>Ngày sinh</span><span class="val" id="modalclientDob">—</span></div>
+            <div class="invoice-detail-row"><span class="lbl"><i class="fas fa-phone me-1"></i>Điện thoại</span><span class="val" id="modalclientPhone">—</span></div>
+            <div class="invoice-detail-row"><span class="lbl"><i class="fas fa-envelope me-1"></i>Email</span><span class="val" id="modalclientEmail">—</span></div>
+            <div class="invoice-detail-row"><span class="lbl"><i class="fas fa-map-marker-alt me-1"></i>Địa chỉ</span><span class="val" id="modalclientAddr">—</span></div>
+            <div class="invoice-detail-row"><span class="lbl"><i class="fas fa-id-card me-1"></i>CCCD / Mã PIN</span><span class="val" id="modalclientPin">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-appointments" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý lịch hẹn</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+
+        <div class="filter-bar">
+          <span class="filter-label"><i class="fas fa-filter me-1"></i>Lọc theo:</span>
+          <select id="apptStatusFilter" class="filter-select">
+            <option value="">Tất cả trạng thái</option>
+            <option value="Đã đặt lịch">Đã đặt lịch</option>
+            <option value="Đã khám">Đã khám</option>
+            <option value="Vắng mặt">Vắng mặt</option>
+            <option value="Đã huỷ">Đã huỷ</option>
+          </select>
+          <select id="filterYear" class="filter-select">
+            <option value="">Tất cả năm</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+          <select id="filterMonth" class="filter-select">
+            <option value="">Tất cả tháng</option>
+            <option value="01">Tháng 1</option>
+            <option value="02">Tháng 2</option>
+            <option value="03">Tháng 3</option>
+            <option value="04">Tháng 4</option>
+            <option value="05">Tháng 5</option>
+            <option value="06">Tháng 6</option>
+            <option value="07">Tháng 7</option>
+            <option value="08">Tháng 8</option>
+            <option value="09">Tháng 9</option>
+            <option value="10">Tháng 10</option>
+            <option value="11">Tháng 11</option>
+            <option value="12">Tháng 12</option>
+          </select>
+          <select id="filterDay" class="filter-select">
+            <option value="">Tất cả ngày</option>
+          </select>
+          <button class="btn-reset-filter" id="btnResetApptFilter"><i class="fas fa-rotate-left me-1"></i>Đặt lại</button>
+          <button class="btn-today-filter" id="btnTodayAppt"><i class="fas fa-calendar-day me-1"></i>Hôm nay</button>
+        </div>
+
+        <div class="content-section">
+          <div class="table-responsive">
+            <table class="table align-middle" id="apptTable">
+              <thead>
+                <tr>
+                  <th onclick="sortDentistTable(0,'apptTable')">Tên Khách Hàng ⇅</th>
+                  <th onclick="sortDentistTable(1,'apptTable')">Ngày ⇅</th>
+                  <th>Thời Gian</th>
+                  <th>Lý Do</th>
+                  <th onclick="sortDentistTable(4,'apptTable')">Trạng Thái ⇅</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for appt in appointments %}
+                <tr class="appt-row
+                  {% if appt.is_today %}is-today{% endif %}
+                  {% if appt.date_of_appointment > today %}is-upcoming{% endif %}
+                  {% if appt.date_of_appointment < today %}is-past{% endif %}"
+                  data-status="{{ appt.appointment_status }}">
+                  <td class="fw-bold">{{ appt.client_name }}</td>
+                  <td>{{ appt.date_of_appointment }}</td>
+                  <td><i class="far fa-clock me-1 text-primary"></i>{{ appt.time_str }}</td>
+                  <td>{{ appt.reason or '—' }}</td>
+                  <td>
+                    <button class="btn btn-sm fw-bold shadow-sm 
+                        {% if appt.appointment_status == 'Đã khám' %}bg-success text-white
+                        {% elif appt.appointment_status == 'Đã đặt lịch' %}bg-warning text-dark
+                        {% elif appt.appointment_status == 'Vắng mặt' %}bg-secondary text-white
+                        {% else %}bg-danger text-white{% endif %}"
+                        style="border-radius: 8px;"
+                        onclick="openStatusModal({{ appt.appointment_id }}, 'dentist', this)">
+                      {{ appt.appointment_status }} <i class="fas fa-edit ms-1" style="font-size: 0.75rem; opacity: 0.8;"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-muted text-center p-4">Không có lịch hẹn nào.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-wrapper" id="paginationAppt"></div>
+        </div>
+      </div>
+
+      <div id="view-treatments" class="dashboard-view sub-view-container">
+
+        <div id="subview-treatment-list" class="sub-view active-view">
+          <div class="page-header">
+            <h1 class="page-title">Liệu trình dịch vụ</h1>
+            <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+          </div>
+          <button class="btn btn-primary mb-4 fw-bold px-4" onclick="switchTreatmentView('subview-treatment-add')">
+            <i class="fas fa-plus me-2"></i> Thêm Liệu Trình
+          </button>
+          <div class="content-section">
+            <div class="table-responsive">
+              <table class="table align-middle" id="treatmentTable">
+                <thead>
+                  <tr>
+                    <th onclick="sortDentistTable(0,'treatmentTable')">Ngày Lập ⇅</th>
+                    <th onclick="sortDentistTable(1,'treatmentTable')">Tên Khách Hàng ⇅</th>
+                    <th onclick="sortDentistTable(2,'treatmentTable')">Chủ Đề ⇅</th>
+                    <th>Mô Tả</th>
+                    <th>Hành Động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for t in treatments %}
+                  <tr>
+                    <td>{{ t.date_of_appointment }}</td>
+                    <td class="fw-bold">{{ t.client_name }}</td>
+                    <td class="text-primary fw-bold">{{ t.title }}</td>
+                    <td class="text-muted" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ t.description }}">{{ t.description or '—' }}</td>
+                    <td class="action-icons">
+                      <i class="fas fa-edit text-primary"
+                         title="Sửa liệu trình"
+                         onclick="openEditTreatmentModal({{ t.treatment_id }},'{{ t.title | replace("'","\\'") }}','{{ t.description | replace("'","\\'") | replace("\n"," ") }}')">
+                      </i>
+                      <i class="fas fa-trash-alt text-danger"
+                         title="Xoá liệu trình"
+                         onclick="deleteTreatment({{ t.treatment_id }}, this)">
+                      </i>
+                    </td>
+                  </tr>
+                  {% else %}
+                  <tr><td colspan="5" class="text-muted text-center p-4"><i class="fas fa-folder-open me-2"></i>Chưa có liệu trình nào được lập.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div class="pagination-wrapper" id="paginationTreatments"></div>
+          </div>
+        </div>
+        <div id="subview-treatment-add" class="sub-view">
+          <div class="page-header">
+            <h1 class="page-title">Thêm Liệu Trình</h1>
+            <button class="btn btn-outline-secondary fw-bold" onclick="switchTreatmentView('subview-treatment-list')">
+              <i class="fas fa-arrow-left me-2"></i> Quay Về
+            </button>
+          </div>
+
+          <div class="content-section" style="background:transparent;box-shadow:none;padding:0">
+            <div class="split-form">
+              <div class="form-half">
+                <h5 class="text-primary mb-4 border-bottom pb-2"><i class="fas fa-info-circle me-2"></i>Thông Tin Liệu Trình</h5>
+
+                <label class="form-label">Khách Hàng <span class="text-danger">*</span></label>
+                <select class="form-select mb-3" id="formClientId" onchange="filterApptByClient()">
+                  {% for p in clients %}
+                  <option value="{{ p.client_id }}">{{ p.name }} — {{ p.phone }}</option>
+                  {% endfor %}
+                </select>
+
+                <label class="form-label">Lịch Hẹn Liên Kết <span class="text-danger">*</span></label>
+                <select class="form-select mb-3" id="formApptId">
+                  {% for a in appointments %}
+                  <option value="{{ a.appointment_id }}" data-client="{{ a.client_id }}">
+                    Ngày {{ a.date_of_appointment }} {{ a.time_str }}
+                    {% if a.appointment_status == 'Đã khám' %} ✓{% endif %}
+                  </option>
+                  {% endfor %}
+                </select>
+
+                <label class="form-label">Chủ Đề Liệu Trình <span class="text-danger">*</span></label>
+                <input type="text" id="formTitle" class="form-control mb-3" placeholder="VD: Nhổ răng khôn R8, Trám răng số 36..." />
+
+                <label class="form-label">Mô Tả / Triệu Chứng</label>
+                <textarea id="formDesc" class="form-control" rows="5" placeholder="Nhập triệu chứng, phương hướng điều trị, ghi chú lâm sàng..."></textarea>
+              </div>
+
+              <div class="form-half">
+                <h5 class="text-primary mb-4 border-bottom pb-2"><i class="fas fa-tooth me-2"></i>Dịch Vụ Sử Dụng</h5>
+
+                <div class="row g-2">
+                  <div class="col-12">
+                    <label class="form-label">Gói Dịch Vụ</label>
+                    <select id="tmpService" class="form-select">
+                      {% for s in procedures_list %}
+                      <option value="{{ s.procedure_id }}" data-price="{{ s.procedure_price }}">
+                        {{ s.procedure_name }} — {{ "{:,.0f}".format(s.procedure_price) }}đ
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-5">
+                    <label class="form-label">Răng Số</label>
+                    <input type="text" id="tmpTooth" class="form-control" placeholder="VD: 38" />
+                  </div>
+                  <div class="col-3">
+                    <label class="form-label">Số Lượng</label>
+                    <input type="number" id="tmpQty" class="form-control" value="1" min="1" />
+                  </div>
+                  <div class="col-4 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary w-100 mb-1 fw-bold" onclick="addServiceItem()">
+                      <i class="fas fa-plus me-1"></i> Thêm
+                    </button>
+                  </div>
+                </div>
+
+                <label class="form-label mt-3">Dịch Vụ Đã Chọn</label>
+                <div class="selected-services-box">
+                  <div id="serviceCartRender">
+                    <div class="p-3 text-muted text-center"><i class="fas fa-cart-plus me-2"></i>Chưa có dịch vụ nào được thêm.</div>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 p-3 rounded" style="background:var(--light-bg)">
+                  <span class="fw-700 text-muted">Tổng tạm tính:</span>
+                  <span class="fw-bold text-primary fs-5" id="cartTotal">0 đ</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-success w-100 py-3 fw-bold fs-5 shadow-sm mt-2" onclick="submitTreatmentPlan()">
+              <i class="fas fa-check-circle me-2"></i> TẠO LIỆU TRÌNH
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-xrays" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">X-Rays</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+        <div class="content-section text-center py-5">
+          <i class="fas fa-x-ray" style="font-size:4rem;color:var(--border);margin-bottom:16px;display:block"></i>
+          <h5 class="text-muted">Tính năng đang xây dựng</h5>
+          <p class="text-muted">Quản lý hình ảnh X-Ray sẽ sớm được cập nhật.</p>
+        </div>
+      </div>
+
+      <div id="view-profile" class="dashboard-view">
+        <div class="page-header">
+          <h1 class="page-title">Thông tin cá nhân</h1>
+          <div class="current-date"><i class="far fa-calendar-check"></i> <span class="date-render"></span></div>
+        </div>
+        <div class="content-section">
+          <div class="section-header"><h4>Thông tin nhân viên</h4></div>
+          <div class="row g-4">
+            <div class="col-md-6">
+              <p class="mb-3 text-muted">Họ và tên:<br /><strong class="text-dark fs-5">{{ dentist.name }}</strong></p>
+              <p class="mb-3 text-muted">Mã định danh (CCCD):<br /><strong class="text-dark">{{ dentist.employee_pin }}</strong></p>
+              <p class="mb-3 text-muted">Giới tính:<br /><strong class="text-dark">{{ 'Nam' if dentist.gender == 'M' else 'Nữ' }}</strong></p>
+              <p class="mb-3 text-muted">Vai trò / Chức vụ:<br /><strong class="text-primary">{{ 'Nha sĩ' if dentist.employee_type == 'd' else 'Phụ tá' }}</strong></p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-3 text-muted">Số điện thoại:<br /><strong class="text-dark">{{ dentist.phone }}</strong></p>
+              <p class="mb-3 text-muted">Email:<br /><strong class="text-dark">{{ dentist.email }}</strong></p>
+              <p class="mb-3 text-muted">Địa chỉ cư trú:<br /><strong class="text-dark">{{ dentist.address }}</strong></p>
+              <p class="mb-3 text-muted">Thu nhập cơ bản:<br /><strong class="text-success fs-5">{{ "{:,.0f}".format(dentist.salary) }} VNĐ</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="invoice-overlay" id="statusModalOverlay">
+        <div class="invoice-modal" style="max-width:320px; text-align: center; padding: 24px;">
+          <button class="invoice-modal-close" onclick="document.getElementById('statusModalOverlay').classList.remove('open')">
+            <i class="fas fa-times"></i>
+          </button>
+          <div class="invoice-modal-title mb-2"><i class="fas fa-exchange-alt me-2 text-primary"></i>Đổi trạng thái</div>
+          <p class="text-muted mb-4" style="font-size: 0.85rem;">Cập nhật trạng thái mới cho lịch hẹn này:</p>
+
+          <input type="hidden" id="modalApptId">
+          <input type="hidden" id="modalApptRole">
+
+          <div class="d-grid gap-3">
+            <button class="btn btn-warning fw-bold text-dark shadow-sm" onclick="submitStatusChange('Đã đặt lịch')">Đã đặt lịch</button>
+            <button class="btn btn-success fw-bold shadow-sm" onclick="submitStatusChange('Đã khám')">Đã khám</button>
+            <button class="btn btn-secondary fw-bold shadow-sm" onclick="submitStatusChange('Vắng mặt')">Vắng mặt</button>
+            <button class="btn btn-danger fw-bold shadow-sm" onclick="submitStatusChange('Đã huỷ')">Đã huỷ</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <div class="invoice-overlay" id="editTreatmentOverlay">
+      <div class="invoice-modal" style="max-width:500px">
+        <button class="invoice-modal-close" onclick="document.getElementById('editTreatmentOverlay').classList.remove('open')">
+          <i class="fas fa-times"></i>
+        </button>
+        <div class="invoice-modal-title"><i class="fas fa-edit me-2 text-primary"></i>Sửa Liệu Trình</div>
+        <div class="invoice-modal-sub mb-3">Chỉnh sửa chủ đề và mô tả liệu trình</div>
+        <input type="hidden" id="editTreatmentId" />
+        <div class="mb-3">
+          <label class="form-label">Chủ Đề <span class="text-danger">*</span></label>
+          <input type="text" id="editTreatmentTitle" class="form-control" placeholder="Chủ đề liệu trình..." />
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Mô Tả / Triệu Chứng</label>
+          <textarea id="editTreatmentDesc" class="form-control" rows="4" placeholder="Mô tả, triệu chứng, ghi chú..."></textarea>
+        </div>
+        <button class="btn btn-primary w-100 fw-bold" onclick="submitEditTreatment()">
+          <i class="fas fa-save me-2"></i>Lưu Thay Đổi
+        </button>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dentist_dashboard.js') }}"></script>
+  </body>
+</html>
