@@ -213,9 +213,9 @@
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" id="clientSearchInput" class="search-bar" placeholder="Tìm kiếm khách hàng theo tên..." />
             </div>
-            <button class="btn btn-primary fw-bold px-4 shadow-sm" style="border-radius: 8px; height: 50px;" onclick="alert('Tính năng thêm bằng Admin đang bảo trì, vui lòng dùng tài khoản Lễ tân để thêm mới.')">
-                <i class="fas fa-user-plus me-2"></i>Thêm khách hàng
-            </button>
+            <button class="btn btn-primary fw-bold px-4 shadow-sm" style="border-radius: 8px; height: 50px;" onclick="document.getElementById('addClientOverlay').classList.add('open')">
+              <i class="fas fa-user-plus me-2"></i>Thêm khách hàng
+          </button>
         </div>
         
         <div class="grid-container">
@@ -247,7 +247,7 @@
                 <i class="fas fa-search search-icon"></i>
                 <input type="text" id="empSearchInput" class="search-bar" placeholder="Tìm kiếm nhân viên theo tên..." />
             </div>
-            <button class="btn btn-primary fw-bold px-4 shadow-sm" style="border-radius: 8px; height: 50px;" onclick="alert('Tính năng tạo nhân viên đang bảo trì.')">
+            <button class="btn btn-primary fw-bold px-4 shadow-sm" style="border-radius: 8px; height: 50px;" onclick="document.getElementById('addEmpOverlay').classList.add('open')">
                 <i class="fas fa-user-plus me-2"></i>Thêm nhân viên
             </button>
         </div>
@@ -495,5 +495,85 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+
+    <div class="invoice-overlay" id="addClientOverlay">
+      <div class="invoice-modal" style="max-width: 550px">
+        <button class="invoice-modal-close" onclick="document.getElementById('addClientOverlay').classList.remove('open')">
+          <i class="fas fa-times"></i>
+        </button>
+        <div class="invoice-modal-title mb-4">
+          <i class="fas fa-user-plus me-2 text-primary"></i>Thêm khách hàng mới
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label mb-1">Tên khách hàng *</label><input type="text" id="addClientName" class="form-control" /></div>
+          <div class="col-md-6">
+            <label class="form-label mb-1">Giới tính *</label>
+            <select id="addClientGender" class="form-select">
+              <option value="M">Nam</option>
+              <option value="F">Nữ</option>
+            </select>
+          </div>
+          <div class="col-md-6"><label class="form-label mb-1">Ngày sinh *</label><input type="date" id="addClientDob" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label mb-1">CCCD</label><input type="text" id="addClientPin" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label mb-1">Số điện thoại *</label><input type="text" id="addClientPhone" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label mb-1">Email</label><input type="email" id="addClientEmail" class="form-control" /></div>
+          <div class="col-12"><label class="form-label mb-1">Địa chỉ</label><input type="text" id="addClientAddress" class="form-control" /></div>
+
+          <div class="col-12 mt-3 pt-3 border-top"><h6 class="fw-bold text-primary mb-3">Tài khoản truy cập</h6></div>
+          <div class="col-md-6"><label class="form-label mb-1">Tên đăng nhập *</label><input type="text" id="addClientUser" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label mb-1">Mật khẩu *</label><input type="password" id="addClientPass" class="form-control" /></div>
+        </div>
+
+        <div class="text-end mt-4">
+          <button class="btn btn-primary fw-bold px-4" onclick="submitAddClient()"><i class="fas fa-check me-2"></i>Xác nhận</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="invoice-overlay" id="addEmpOverlay">
+      <div class="invoice-modal" style="max-width: 550px">
+        <button class="invoice-modal-close" onclick="document.getElementById('addEmpOverlay').classList.remove('open')">
+          <i class="fas fa-times"></i>
+        </button>
+        <div class="invoice-modal-title mb-4">
+          <i class="fas fa-user-md me-2 text-primary"></i>Thêm nhân viên mới
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label mb-1">Tên nhân viên *</label><input type="text" id="addEmpName" class="form-control" /></div>
+          <div class="col-md-6">
+            <label class="form-label mb-1">Giới tính *</label>
+            <select id="addEmpGender" class="form-select">
+              <option value="M">Nam</option>
+              <option value="F">Nữ</option>
+            </select>
+          </div>
+          <div class="col-md-6"><label class="form-label mb-1">Ngày sinh *</label><input type="date" id="addEmpDob" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label mb-1">CCCD</label><input type="text" id="addEmpPin" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label mb-1">Số điện thoại *</label><input type="text" id="addEmpPhone" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label mb-1">Email</label><input type="email" id="addEmpEmail" class="form-control" /></div>
+          <div class="col-12"><label class="form-label mb-1">Địa chỉ</label><input type="text" id="addEmpAddress" class="form-control" /></div>
+          
+          <div class="col-md-6">
+            <label class="form-label mb-1">Loại nhân viên *</label>
+            <select id="addEmpType" class="form-select">
+              <option value="d">Nha sĩ</option>
+              <option value="r">Lễ tân</option>
+              <option value="a">Admin</option>
+            </select>
+          </div>
+          <div class="col-md-6"><label class="form-label mb-1">Lương cơ bản *</label><input type="number" id="addEmpSalary" class="form-control" value="0" /></div>
+
+          <div class="col-12 mt-3 pt-3 border-top"><h6 class="fw-bold text-primary mb-3">Tài khoản truy cập</h6></div>
+          <div class="col-md-6"><label class="form-label mb-1">Tên đăng nhập *</label><input type="text" id="addEmpUser" class="form-control" /></div>
+          <div class="col-md-6"><label class="form-label mb-1">Mật khẩu *</label><input type="password" id="addEmpPass" class="form-control" /></div>
+        </div>
+
+        <div class="text-end mt-4">
+          <button class="btn btn-primary fw-bold px-4" onclick="submitAddEmployee()"><i class="fas fa-check me-2"></i>Xác nhận</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
