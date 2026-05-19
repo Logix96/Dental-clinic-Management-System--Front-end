@@ -1,0 +1,173 @@
+:root {
+  --primary: #1a6fa8;
+  --primary-dark: #145a8c;
+  --accent: #e05c2a;
+  --light-bg: #f4f8fc;
+  --white: #ffffff;
+  --text-dark: #1a2a3a;
+  --text-muted: #6c757d;
+  --border: #dee2e6;
+  --shadow: 0 8px 40px rgba(26, 111, 168, 0.13);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Nunito", sans-serif;
+  color: var(--text-dark);
+  background: linear-gradient(120deg, #e8f3fc 0%, #f4f8fc 60%, #fff 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAVBAR ---- */
+.main-navbar {
+  background: var(--white);
+  box-shadow: 0 2px 12px rgba(26, 111, 168, 0.08);
+  padding: 10px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.logo-icon {
+  width: 52px;
+  height: 52px;
+}
+
+/* ---- FORM ĐĂNG KÝ ---- */
+.register-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+.register-card {
+  background: var(--white);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 40px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.register-title {
+  font-family: "Nunito", sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  text-align: center;
+  margin-bottom: 30px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary);
+  border-bottom: 2px solid #e8f3fc;
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- INPUT + CONTROL ---- */
+.form-label {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+
+.form-control,
+.form-select {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 0.95rem;
+  font-family: "Nunito", sans-serif;
+  color: var(--text-dark);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26, 111, 168, 0.1);
+  outline: none;
+}
+
+/* ---- NÚT BẤM VÀ LINK ---- */
+.btn-register {
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 100px;
+  padding: 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  width: 100%;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+  margin-top: 20px;
+}
+
+.btn-register:hover {
+  background: var(--primary-dark);
+  box-shadow: 0 6px 18px rgba(26, 111, 168, 0.25);
+  color: #ffffff;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.login-link {
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+
+.login-link a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .register-card {
+    padding: 30px 20px;
+  }
+}
