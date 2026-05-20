@@ -32,6 +32,16 @@
     <div class="login-wrapper">
       <div class="login-card">
         <div class="login-title">ĐĂNG NHẬP</div>
+        
+        {% if error %}
+        <div class="alert-box alert-error">
+          <i class="fas fa-exclamation-circle alert-icon"></i>
+          <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/login">
+          <div class="mb-3">
         <form method="POST" action="/login">
           <div class="mb-3">
             <label class="form-label">Tên đăng nhập</label>
